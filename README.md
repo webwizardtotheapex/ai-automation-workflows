@@ -63,7 +63,7 @@ Features include:
 
 📁 Folder:
 
-`OutreachOS`
+https://github.com/webwizardtotheapex/ai-automation-workflows/tree/main/AI-Automation-Workflows/OutreachOS
 
 ---
 
@@ -117,18 +117,6 @@ Features:
 - Organize companies
 - Manage application status
 
----
-
-## 👥 HR Recruitment Assignment
-
-AI-assisted recruitment workflow demonstrating:
-
-- Candidate processing
-- Workflow automation
-- Recruitment pipeline
-- Notification automation
-
----
 
 # 📸 Project Screenshots
 
