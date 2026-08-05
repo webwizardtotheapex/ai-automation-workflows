@@ -97,7 +97,7 @@ AI Automation Engineer
 
 💼 LinkedIn: https://www.linkedin.com/in/isa-hassan-automation/
 
-💻 GitHub: https://github.com/hassadem
+💻 GitHub: https://github.com/webwizardtotheapex
 
 🐦 X (Twitter): https://x.com/SolDevHassan
 
