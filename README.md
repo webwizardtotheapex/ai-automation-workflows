@@ -46,7 +46,7 @@ An AI-powered lead qualification workflow that:
 
 📁 Folder:
 
-`Real-Estate-Lead-Intake`
+https://github.com/webwizardtotheapex/ai-automation-workflows/tree/main/AI-Automation-Workflows/Real%20Estate%20Intake
 
 ---
 
