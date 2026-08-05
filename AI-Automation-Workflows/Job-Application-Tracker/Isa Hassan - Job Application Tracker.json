@@ -1,0 +1,1070 @@
+{
+  "name": "Isa Hassan - Job Application Tracker",
+  "nodes": [
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Daniel Okafor Form').item.json['Years Of Experience'] }}",
+                    "rightValue": "0–2 years",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "baa666b0-fc7a-45bb-b022-a3662ee9161a"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Entry Level"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "20a2308a-4f43-437d-b010-4911d6f00253",
+                    "leftValue": "={{ $('Daniel Okafor Form').item.json['Years Of Experience'] }}",
+                    "rightValue": "3–5 years",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Mid Level"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d7c0f592-ad4f-417c-8be7-b0706aa81dbb",
+                    "leftValue": "={{ $('Daniel Okafor Form').item.json['Years Of Experience'] }}",
+                    "rightValue": "6+ years",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Senior Level"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6105e233-def2-4855-b690-04d7409fdfa1",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        736,
+        -16
+      ],
+      "webhookId": null
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Daniel Okafor Form').item.json['Email Address'] }}",
+        "subject": "Interview Invitation – Daniel Okafor Logistics",
+        "emailType": "text",
+        "message": "={{ JSON.parse($json.output[0].content[0].text).emailBody }}",
+        "options": {}
+      },
+      "id": "9caf3cda-0f2a-4efe-b315-e108f5ec886c",
+      "name": "Senior Level",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        192
+      ],
+      "webhookId": "ca5fbcd0-d7e2-433b-8585-5c3b5d224097",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ynqzVxS4SwscQ8NN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Daniel Okafor Form').item.json['Email Address'] }}",
+        "subject": "Interview Invitation – Daniel Okafor Logistics",
+        "emailType": "text",
+        "message": "={{ JSON.parse($json.output[0].content[0].text).emailBody }}",
+        "options": {}
+      },
+      "id": "8d9d3414-4331-4883-8d0f-03e434967bd0",
+      "name": "Mid Level",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        0
+      ],
+      "webhookId": "ca5fbcd0-d7e2-433b-8585-5c3b5d224097",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ynqzVxS4SwscQ8NN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Daniel Okafor Form').item.json['Email Address'] }}",
+        "subject": "Update on Your Job Application – Daniel Okafor Logistics",
+        "emailType": "text",
+        "message": "={{ JSON.parse($json.output[0].content[0].text).emailBody }}",
+        "options": {}
+      },
+      "id": "22452acc-b190-4feb-8ff9-baa6ae574a52",
+      "name": "Entry Level",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        -192
+      ],
+      "webhookId": "ca5fbcd0-d7e2-433b-8585-5c3b5d224097",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ynqzVxS4SwscQ8NN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "totheapexdomain@gmail.com",
+        "subject": "=New Job Application Received - {{ $('Daniel Okafor Form').item.json['Full Name'] }}",
+        "emailType": "text",
+        "message": "=Dear HR Team,\n\nA new job application has been received.\n\nApplicant Details\n\nFull Name: {{ $('Daniel Okafor Form').item.json['Full Name'] }}\n\nEmail: {{ $('Daniel Okafor Form').item.json['Email Address'] }}\n\nPhone Number: {{ $('Daniel Okafor Form').item.json['Phone Number'] }}\n\nPosition Applied For: {{ $('Daniel Okafor Form').item.json['Position Applying For'] }}\n\nYears of Experience: {{ $('Daniel Okafor Form').item.json['Years Of Experience'] }}\n\nCurrent Location: {{ $('Daniel Okafor Form').item.json['Current Location'] }}\n\nPortfolio: {{ $('Daniel Okafor Form').item.json['Portfolio or Professional Profile Link (Optional)'] }}\n\nCV/Resume Link: {{ $json.webViewLink }}\n\nReason for Applying: {{ $('Daniel Okafor Form').item.json['Why Do You Want This Role'] }}\n\nPlease review the applicant and proceed with the recruitment process.\n\nRegards,\nDaniel Okafor Logistics Recruitment System",
+        "options": {}
+      },
+      "id": "cd73e48d-2d90-4290-bfcd-45c0c11aa091",
+      "name": "HR Notification",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        288,
+        0
+      ],
+      "webhookId": "6eb3e68f-c92f-4f9e-822a-4bbbb1ec3111",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ynqzVxS4SwscQ8NN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Daniel Okafor Form').item.json['Email Address'] }}",
+        "subject": "Application Received – Daniel Okafor Logistics",
+        "emailType": "text",
+        "message": "=Dear {{ $('Daniel Okafor Form').item.json['Full Name'] }},  \n\nThank you for applying for the position of {{ $('Daniel Okafor Form').item.json['Position Applying For'] }} at Daniel Okafor Logistics.  \n\nWe have successfully received your application and our HR team will review it carefully.  \n\nIf your qualifications match our current requirements, we will contact you regarding the next stage of the recruitment process.  \n\nThank you for your interest in joining our team. \n\nKind regards,  \nDaniel Okafor Logistics Recruitment Team",
+        "options": {}
+      },
+      "id": "2acfc751-55ad-44a6-a785-755517475698",
+      "name": "Applicants Notification",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        512,
+        0
+      ],
+      "webhookId": "04339e72-69ba-4f51-a570-a07af5a258fe",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ynqzVxS4SwscQ8NN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=You are an HR Assistant for Daniel Okafor Logistics.\n\nWrite a polite email thanking the applicant for applying.\n\nInform them that their application has been received and will remain in our talent pool for future opportunities.\n\nDo not mention an interview.\n\nAlso generate a short HRNotes summary (maximum 2 sentences) for internal HR use.\n\nThe HRNotes must ONLY summarize information provided by the applicant.\n\nDo NOT invent skills, certifications, software knowledge, achievements, or work history that were not provided.\n\nReturn ONLY valid JSON in the following format:\n\n{\n  \"emailBody\": \"Professional email here...\",\n  \"HRNotes\": \"Short internal HR summary here...\"\n}\n\nWrite a natural, professional business email.\n\nKeep the tone formal and concise.\n\nAvoid promotional language, excessive excitement, or spam-like phrases.\n\nDo not use excessive punctuation or all-capital words."
+            },
+            {
+              "content": "=Applicant Information\n\nName:\n{{ $('Daniel Okafor Form').item.json['Full Name'] }}\n\nPosition:\n{{ $('Daniel Okafor Form').item.json['Position Applying For'] }}\n\nExperience:\n{{ $('Daniel Okafor Form').item.json['Years Of Experience'] }}\n\nCurrent Location:\n{{ $('Daniel Okafor Form').item.json['Current Location'] }}\n\nReason for Applying:\n{{ $('Daniel Okafor Form').item.json['Why Do You Want This Role'] }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "d83cd22f-5ec6-4867-8faf-5edbd32a60a6",
+      "name": "Entry Level1",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        960,
+        -192
+      ],
+      "webhookId": null,
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=You are an HR Assistant for Daniel Okafor Logistics.\n\nWrite a professional interview invitation.\n\nCongratulate the applicant on being shortlisted.\n\nInform them that the HR team will contact them regarding the interview schedule.\n\nAlso generate a short HRNotes summary (maximum 2 sentences) for internal HR use.\n\nThe HRNotes must ONLY summarize information provided by the applicant.\n\nDo NOT invent skills, certifications, software knowledge, achievements, or work history that were not provided.\n\nReturn ONLY valid JSON in the following format:\n\n{\n  \"emailBody\": \"Professional interview invitation here...\",\n  \"HRNotes\": \"Short internal HR summary here...\"\n}\n\nWrite a natural, professional business email.\n\nKeep the tone formal and concise.\n\nAvoid promotional language, excessive excitement, or spam-like phrases.\n\nDo not use excessive punctuation or all-capital words."
+            },
+            {
+              "content": "=Applicant Information\n\nName:\n{{ $('Daniel Okafor Form').item.json['Full Name'] }}\n\nPosition:\n{{ $('Daniel Okafor Form').item.json['Position Applying For'] }}\n\nExperience:\n{{ $('Daniel Okafor Form').item.json['Years Of Experience'] }}\n\nCurrent Location:\n{{ $('Daniel Okafor Form').item.json['Current Location'] }}\n\nReason for Applying:\n{{ $('Daniel Okafor Form').item.json['Why Do You Want This Role'] }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "82d30a03-3e1b-4604-8134-7b5565d4bc0a",
+      "name": "Mid Level1",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        960,
+        0
+      ],
+      "webhookId": null,
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=You are an HR Assistant for Daniel Okafor Logistics.\n\nWrite a professional interview invitation.\n\nAcknowledge the applicant's strong experience.\n\nCongratulate them on being shortlisted.\n\nInform them that HR will contact them regarding the interview schedule.\n\nAlso generate a short HRNotes summary (maximum 2 sentences) for internal HR use.\n\nThe HRNotes must ONLY summarize information provided by the applicant.\n\nDo NOT invent skills, certifications, software knowledge, achievements, or work history that were not provided.\n\nReturn ONLY valid JSON in the following format:\n\n{\n  \"emailBody\": \"Professional interview invitation here...\",\n  \"HRNotes\": \"Short internal HR summary here...\"\n}\n\nWrite a natural, professional business email.\n\nAvoid promotional language, excessive excitement, or spam-like phrases.\n\nKeep the tone formal and concise.\n\nDo not use excessive punctuation or all-capital words."
+            },
+            {
+              "content": "=Applicant Information\n\nName:\n{{ $('Daniel Okafor Form').item.json['Full Name'] }}\n\nPosition:\n{{ $('Daniel Okafor Form').item.json['Position Applying For'] }}\n\nExperience:\n{{ $('Daniel Okafor Form').item.json['Years Of Experience'] }}\n\nCurrent Location:\n{{ $('Daniel Okafor Form').item.json['Current Location'] }}\n\nReason for Applying:\n{{ $('Daniel Okafor Form').item.json['Why Do You Want This Role'] }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "c058401f-3285-436f-b84a-d1911d43e440",
+      "name": "Senior Level1",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        960,
+        192
+      ],
+      "webhookId": null,
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 30,
+        "unit": "minutes"
+      },
+      "id": "b04e73e1-3e80-4bb8-b228-443edea172b4",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1312,
+        -192
+      ],
+      "webhookId": "8fc0c5b9-c40b-4cae-8149-dc454a305675"
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "minutes"
+      },
+      "id": "365ad657-dadd-4231-ba1a-3780d347584b",
+      "name": "Wait1",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1312,
+        0
+      ],
+      "webhookId": "6f8f3ccb-3ff3-4903-ae5a-eeaf3e5ff884"
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "minutes"
+      },
+      "id": "7199e855-762b-46b6-bc86-e2f5fc6e017e",
+      "name": "Wait2",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1312,
+        192
+      ],
+      "webhookId": "6f9a7bd6-bccf-4800-836b-603dc7e47d81"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "edb41bf0-a0c4-41e3-8de9-344d00ad5eb9",
+              "name": "experienceCategory",
+              "value": "Entry Level",
+              "type": "string"
+            },
+            {
+              "id": "afcfc1a6-a624-461b-bd12-81ae794034dc",
+              "name": "applicationStatus",
+              "value": "Talent Pool",
+              "type": "string"
+            },
+            {
+              "id": "4da4f378-e0ea-481b-af99-864dfb4b0ec5",
+              "name": "interviewInvitation",
+              "value": "Not Sent",
+              "type": "string"
+            },
+            {
+              "id": "737f1b1a-1ed9-4e62-ae80-16ec4535cdd5",
+              "name": "HRNotes",
+              "value": "={{ JSON.parse($json.output[0].content[0].text).HRNotes }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "2a393433-5e92-41c7-9402-9063c5617d69",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1536,
+        -192
+      ],
+      "webhookId": null
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "58103558-6fe3-4f15-ab8f-97124f9eaad0",
+              "name": "experienceCategory",
+              "value": "Mid Level",
+              "type": "string"
+            },
+            {
+              "id": "b0bb5ce6-9fbb-4567-879e-902ef77a4ff4",
+              "name": "applicationStatus",
+              "value": "Shortlisted",
+              "type": "string"
+            },
+            {
+              "id": "9b4189aa-35f3-4a5d-9aea-e3c564aa8257",
+              "name": "interviewInvitation",
+              "value": "Sent",
+              "type": "string"
+            },
+            {
+              "id": "bb6f4786-030a-4197-9688-8d7ff75c41da",
+              "name": "HRNotes",
+              "value": "={{ JSON.parse($json.output[0].content[0].text).HRNotes }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "44291ac8-7f59-4bda-8a5d-baf4f2683634",
+      "name": "Edit Fields1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1536,
+        0
+      ],
+      "webhookId": null
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7d73054d-be8d-4602-9e96-1dbe741b6ff2",
+              "name": "experienceCategory",
+              "value": "Senior Level",
+              "type": "string"
+            },
+            {
+              "id": "67ee2aaa-42bf-4f4b-9185-7efbee0e5307",
+              "name": "applicationStatus",
+              "value": "Shortlisted",
+              "type": "string"
+            },
+            {
+              "id": "c70faa56-e3d4-4727-ae18-a27e894a4d33",
+              "name": "interviewInvitation",
+              "value": "Sent",
+              "type": "string"
+            },
+            {
+              "id": "0870f872-ee72-40ae-bb4d-3415b3ddeeab",
+              "name": "HRNotes",
+              "value": "={{ JSON.parse($json.output[0].content[0].text).HRNotes }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "4b0a72b6-7833-41fe-89fb-5695c0365880",
+      "name": "Edit Fields2",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1536,
+        192
+      ],
+      "webhookId": null
+    },
+    {
+      "parameters": {
+        "formTitle": "Daniel Okafor Logistics Career Application Portal",
+        "formDescription": "Thank you for your interest in joining Daniel Okafor Logistics. Please complete this application form with accurate and up-to-date information.\n\nOnce your application is submitted, you will receive an automatic confirmation email acknowledging receipt of your application. Our HR team will carefully review all submissions, and qualified candidates will be contacted via email with an interview invitation.\n\nFields marked with (*) are required.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Full Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email Address",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Phone Number",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Position Applying For",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Operations Officer"
+                  },
+                  {
+                    "option": "Customer Service Representative"
+                  },
+                  {
+                    "option": "Logistics Coordinator"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Years Of Experience",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "0–2 years"
+                  },
+                  {
+                    "option": "3–5 years"
+                  },
+                  {
+                    "option": "6+ years"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Current Location",
+              "placeholder": "e.g., Lagos, Nigeria"
+            },
+            {
+              "fieldLabel": "Upload Your CV/Resume",
+              "fieldType": "file",
+              "acceptFileTypes": "pdf",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Portfolio or Professional Profile Link (Optional)",
+              "placeholder": "Share a link to your GitHub, LinkedIn, personal website, Behance, Google Drive portfolio, or other professional profile."
+            },
+            {
+              "fieldLabel": "Why Do You Want This Role",
+              "fieldType": "textarea"
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false,
+          "customCss": ":root {\n    /* Typography */\n    --font-family: 'Inter', 'Segoe UI', sans-serif;\n    --font-weight-normal: 400;\n    --font-weight-bold: 600;\n\n    --font-size-body: 14px;\n    --font-size-label: 15px;\n    --font-size-test-notice: 13px;\n    --font-size-input: 15px;\n    --font-size-header: 30px;\n    --font-size-subheader: 16px;\n    --font-size-paragraph: 15px;\n    --font-size-link: 14px;\n    --font-size-error: 13px;\n\n    --font-size-html-h1: 34px;\n    --font-size-html-h2: 28px;\n    --font-size-html-h3: 22px;\n    --font-size-html-h4: 18px;\n    --font-size-html-h5: 16px;\n    --font-size-html-h6: 14px;\n\n    /* Background */\n    --color-background: #f4f7fb;\n\n    /* Card */\n    --color-card-bg: #ffffff;\n    --color-card-border: #e5e7eb;\n    --color-card-shadow: rgba(15, 23, 42, 0.08);\n\n    /* Text */\n    --color-header: #111827;\n    --color-header-subtext: #6b7280;\n    --color-label: #374151;\n    --color-html-text: #374151;\n\n    /* Links */\n    --color-link: #2563eb;\n    --color-html-link: #2563eb;\n\n    /* Inputs */\n    --color-input-border: #d1d5db;\n    --color-input-text: #111827;\n    --color-focus-border: #2563eb;\n\n    /* Button */\n    --color-submit-btn-bg: #2563eb;\n    --color-submit-btn-text: #ffffff;\n\n    /* Validation */\n    --color-required: #ef4444;\n    --color-error: #dc2626;\n\n    /* Test Notice */\n    --color-test-notice-bg: #eff6ff;\n    --color-test-notice-border: #bfdbfe;\n    --color-test-notice-text: #1d4ed8;\n\n    /* Clear Button */\n    --color-clear-button-bg: #6b7280;\n\n    /* Radius */\n    --border-radius-card: 16px;\n    --border-radius-input: 12px;\n    --border-radius-clear-btn: 50%;\n    --card-border-radius: 16px;\n\n    /* Padding */\n    --padding-container-top: 40px;\n    --padding-card: 32px;\n    --padding-form-input: 14px;\n    --padding-test-notice-horizontal: 24px;\n    --padding-test-notice-vertical: 14px;\n\n    --margin-bottom-card: 24px;\n    --card-padding: 32px;\n    --card-margin-bottom: 24px;\n\n    /* Width */\n    --container-width: 640px;\n    --submit-btn-height: 54px;\n\n    /* Misc */\n    --checkbox-size: 20px;\n    --box-shadow-card: 0 10px 35px rgba(15,23,42,.08);\n    --opacity-placeholder: .65;\n}"
+        }
+      },
+      "id": "d93c0846-2b61-45a1-b92a-490d320310b6",
+      "name": "Daniel Okafor Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        -160,
+        0
+      ],
+      "webhookId": "5fbcbbc7-07e0-428a-b1f1-098827fd10e2"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "Upload_Your_CV_Resume",
+        "name": "={{ $json[\"Full Name\"].replace(/\\s+/g, \"_\") + \"_CV.pdf\" }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1upGBRlA8e-2WZWKnnxdthx0je6OGaNdU",
+          "mode": "list",
+          "cachedResultName": "Daniel Okafor Application",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1upGBRlA8e-2WZWKnnxdthx0je6OGaNdU"
+        },
+        "options": {}
+      },
+      "id": "ff84437c-840a-4583-b12f-7effdfe3b7f0",
+      "name": "Applicants CV Upload",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        64,
+        0
+      ],
+      "webhookId": null,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "j9DtEMESHP91WNWc",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1lZbUy8na8b2DInNLxch2SYBHM-xueqsFSOK6jbvPEEY",
+          "mode": "list",
+          "cachedResultName": "Daniel Okafor Application Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lZbUy8na8b2DInNLxch2SYBHM-xueqsFSOK6jbvPEEY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lZbUy8na8b2DInNLxch2SYBHM-xueqsFSOK6jbvPEEY/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "dateApplied": "={{ $('Daniel Okafor Form').item.json.submittedAt }}",
+            "fullName": "={{ $('Daniel Okafor Form').item.json['Full Name'] }}",
+            "phoneNumber": "={{ $('Daniel Okafor Form').item.json['Phone Number'] }}",
+            "positionAplliedFor": "={{ $('Daniel Okafor Form').item.json['Position Applying For'] }}",
+            "yearsOfExperience": "={{ $('Daniel Okafor Form').item.json['Years Of Experience'] }}",
+            "currentLocation": "={{ $('Daniel Okafor Form').item.json['Current Location'] }}",
+            "CV/PortfolioLink": "={{ $('Daniel Okafor Form').item.json['Portfolio or Professional Profile Link (Optional)'] }}",
+            "whyDoYouWantThisRole?": "={{ $('Daniel Okafor Form').item.json['Why Do You Want This Role'] }}",
+            "CVUpload": "={{ $('Applicants CV Upload').item.json.webViewLink }}",
+            "applicationID": "={{ \"APP-\" + $now.format(\"yyyyMMdd-HHmmss\") }}",
+            "emailAddress": "={{ $('Daniel Okafor Form').item.json['Email Address'] }}",
+            "experienceCategory": "={{ $('Edit Fields').isExecuted ? $('Edit Fields').item.json.experienceCategory : $('Edit Fields1').isExecuted ? $('Edit Fields1').item.json.experienceCategory : $('Edit Fields2').item.json.experienceCategory }}",
+            "applicationStatus": "={{ $('Edit Fields').isExecuted ? $('Edit Fields').item.json.applicationStatus : $('Edit Fields1').isExecuted ? $('Edit Fields1').item.json.applicationStatus : $('Edit Fields2').item.json.applicationStatus }}",
+            "interviewInvitation": "={{ $('Edit Fields').isExecuted ? $('Edit Fields').item.json.interviewInvitation : $('Edit Fields1').isExecuted ? $('Edit Fields1').item.json.interviewInvitation : $('Edit Fields2').item.json.interviewInvitation }}",
+            "HRNotes": "={{ $('Edit Fields').isExecuted ? $('Edit Fields').item.json.HRNotes : $('Edit Fields1').isExecuted ? $('Edit Fields1').item.json.HRNotes : $('Edit Fields2').item.json.HRNotes }}"
+          },
+          "matchingColumns": [
+            "emailAddress"
+          ],
+          "schema": [
+            {
+              "id": "applicationID",
+              "displayName": "applicationID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "dateApplied",
+              "displayName": "dateApplied",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fullName",
+              "displayName": "fullName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "emailAddress",
+              "displayName": "emailAddress",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phoneNumber",
+              "displayName": "phoneNumber",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "positionAplliedFor",
+              "displayName": "positionAplliedFor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "yearsOfExperience",
+              "displayName": "yearsOfExperience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "experienceCategory",
+              "displayName": "experienceCategory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "currentLocation",
+              "displayName": "currentLocation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "CVUpload",
+              "displayName": "CVUpload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "CV/PortfolioLink",
+              "displayName": "CV/PortfolioLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "whyDoYouWantThisRole?",
+              "displayName": "whyDoYouWantThisRole?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "applicationStatus",
+              "displayName": "applicationStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "interviewInvitation",
+              "displayName": "interviewInvitation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "HRNotes",
+              "displayName": "HRNotes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "4922f1aa-b527-4f96-9d39-534ea181269e",
+      "name": "Applicant Records",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1984,
+        0
+      ],
+      "webhookId": null,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8dT2NZR3hwpZBfRE",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Entry Level1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mid Level1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Senior Level1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HR Notification": {
+      "main": [
+        [
+          {
+            "node": "Applicants Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Applicants Notification": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entry Level1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mid Level1": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Senior Level1": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entry Level": {
+      "main": [
+        [
+          {
+            "node": "Applicant Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mid Level": {
+      "main": [
+        [
+          {
+            "node": "Applicant Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Senior Level": {
+      "main": [
+        [
+          {
+            "node": "Applicant Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Entry Level",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Mid Level",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Senior Level",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daniel Okafor Form": {
+      "main": [
+        [
+          {
+            "node": "Applicants CV Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Applicants CV Upload": {
+      "main": [
+        [
+          {
+            "node": "HR Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Applicant Records": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "4b405732-501f-4aa6-9c9c-076fdaab22f1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "25110ea3a91db5db30b33500593a2bdacd005a9bc9fa082f105b3a8d820b1352"
+  },
+  "nodeGroups": [],
+  "id": "Sh4AWYoUcrY9UPMl",
+  "tags": []
+}

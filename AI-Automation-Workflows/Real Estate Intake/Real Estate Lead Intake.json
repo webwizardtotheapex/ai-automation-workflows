@@ -1,0 +1,1517 @@
+{
+  "name": "Real Estate Lead Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "86d464d1-60e1-4ae5-9ad9-03ae9f73b0e0",
+        "options": {}
+      },
+      "id": "8ff721d1-40f9-42cd-b166-2754ed73c9cd",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        560
+      ],
+      "webhookId": "86d464d1-60e1-4ae5-9ad9-03ae9f73b0e0"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const input = $json.body;\nreturn { source: input.source || \"Website\", lead: { firstName: input.firstName || \"\", lastName: input.lastName || \"\", fullName: input.fullName || \"\", email: input.email || \"\", phone: input.phone || \"\" }, property: { budget: Number(input.budget) || 0, location: input.location || \"\", propertyType: input.propertyType || \"\", bedrooms: input.bedrooms || \"\", timeline: input.timeline || \"\" }, message: input.message || \"\", metadata: { leadId: `LD-${Date.now()}`, receivedAt: new Date().toISOString(), createdUnix: Date.now(), status: \"New\" } };"
+      },
+      "id": "dd052a5e-9855-417f-ad4b-ef9c52d4c7bc",
+      "name": "Normalize Info",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an AI Lead Qualification, Translation, Sentiment and Fraud analyst for a real estate company.\n\nAnalyse the lead. Detect the language of the customer's message, translate it to English, assess sentiment and emotion, qualify the lead, and assess spam/fraud risk.\n\nReturn ONLY a valid JSON object. No markdown, no code fences, no explanations. Use EXACTLY this structure:\n\n{\n  \"intent\": \"Buy|Rent|Sell|Investment|Unknown\",\n  \"urgency\": \"High|Medium|Low\",\n  \"budgetSuitable\": true,\n  \"timeline\": \"\",\n  \"summary\": \"\",\n  \"recommendedAction\": \"\",\n  \"language\": \"\",\n  \"translatedMessage\": \"\",\n  \"sentiment\": \"Positive|Neutral|Negative\",\n  \"emotion\": \"\",\n  \"spamScore\": 0,\n  \"spamReasons\": []\n}\n\nDefinitions:\n- language: the detected language of the customer's message as an English word (e.g. English, French, Arabic, Spanish).\n- translatedMessage: the message translated into English. If already English, return it unchanged.\n- sentiment: overall sentiment of the message.\n- emotion: one or two words (e.g. Calm, Excited, Urgent, Anxious, Frustrated, Desperate).\n- budgetSuitable: true if the customer supplied a realistic budget, otherwise false.\n- spamScore: integer 0-100 estimating probability the lead is spam/fake/bot (disposable email, gibberish text, fake/random phone, contradictory info, bot-like language).\n- spamReasons: short strings explaining the spam score.\n\nDo NOT invent facts. Return ONLY the JSON object."
+            },
+            {
+              "content": "={{\n`Lead Details\n\nName: ${$json.lead.fullName}\nEmail: ${$json.lead.email}\nPhone: ${$json.lead.phone}\nBudget: ${$json.property.budget}\nLocation: ${$json.property.location}\nProperty Type: ${$json.property.propertyType}\nBedrooms: ${$json.property.bedrooms}\nTimeline: ${$json.property.timeline}\n\nMessage:\n${$json.message}`\n}}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "b28e2894-208a-449b-b2d5-121d2fcd8cf1",
+      "name": "AI Analyze Lead",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        560
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "n8n credits",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = $json.output?.[0]?.content?.[0]?.text ?? $json.text ?? \"\";\nconst norm = $('Normalize Info').item.json;\nlet ai = {};\nlet aiError = false;\ntry { ai = JSON.parse(String(raw).replace(/```json/gi, \"\").replace(/```/g, \"\").trim()); } catch (e) { aiError = true; }\nconst WEIGHTS = { urgency: { High: 40, Medium: 20, Low: 10 }, timeline: { \"Immediately\": 30, \"Within 1 Month\": 20, \"Within 3 Months\": 10, \"6+ Months\": 5 }, budget: 20, contact: 10 };\nlet score = 0;\nscore += WEIGHTS.urgency[ai.urgency] || 0;\nscore += WEIGHTS.timeline[ai.timeline] || 0;\nif (ai.budgetSuitable === true) score += WEIGHTS.budget;\nif (norm.lead?.email && norm.lead?.phone) score += WEIGHTS.contact;\nconst emotion = String(ai.emotion || \"\").toLowerCase();\nconst sentiment = String(ai.sentiment || \"\").toLowerCase();\nif (/(urgent|critical|anxious|desperate)/.test(emotion)) score += 10;\nif (sentiment.includes(\"negative\") && ai.urgency === \"High\") score += 5;\nif (score > 100) score = 100;\nconst email = String(norm.lead?.email || \"\").toLowerCase();\nconst phoneDigits = String(norm.lead?.phone || \"\").replace(/\\D/g, \"\");\nconst msg = String(norm.message || \"\");\nconst disposable = [\"mailinator.com\",\"tempmail.com\",\"10minutemail.com\",\"guerrillamail.com\",\"yopmail.com\",\"trashmail.com\",\"sharklasers.com\",\"getnada.com\",\"dispostable.com\"];\nconst emailDomain = email.split(\"@\")[1] || \"\";\nlet spamScore = Number(ai.spamScore) || 0;\nconst reasons = Array.isArray(ai.spamReasons) ? [...ai.spamReasons] : [];\nif (disposable.includes(emailDomain)) { spamScore = Math.max(spamScore, 90); reasons.push(\"Disposable email domain\"); }\nif (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)) { spamScore = Math.max(spamScore, 80); reasons.push(\"Invalid email format\"); }\nif (phoneDigits.length < 7 || phoneDigits.length > 15) { spamScore = Math.max(spamScore, 70); reasons.push(\"Suspicious phone number\"); }\nif (msg && /(.)\\1{6,}/.test(msg)) { spamScore = Math.max(spamScore, 75); reasons.push(\"Gibberish / repeated characters\"); }\nif (spamScore > 100) spamScore = 100;\nconst isSpam = spamScore >= 70;\nlet category = \"Cold\";\nif (score >= 80) category = \"Hot\"; else if (score >= 50) category = \"Warm\";\nlet priority = \"P3\";\nif (category === \"Hot\") priority = \"P1\"; else if (category === \"Warm\") priority = \"P2\";\nif (aiError) { category = \"Review Required\"; priority = \"Manual Review\"; score = 0; }\nreturn { ...norm, ai, language: ai.language || \"English\", translatedMessage: ai.translatedMessage || norm.message, sentiment: ai.sentiment || \"\", emotion: ai.emotion || \"\", spamScore, spamReasons: reasons, isSpam, rawAIResponse: raw, aiError, leadScore: score, leadCategory: category, priority };"
+      },
+      "id": "2f31e20d-d707-4b71-abe5-5d7b8fd91d24",
+      "name": "Lead Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "spam-1",
+              "leftValue": "={{ $json.isSpam }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c1000000-0000-0000-0000-0000000000a1",
+      "name": "Is Spam?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "totheapexdomain@gmail.com",
+        "subject": "=🚫 Spam / Fake lead rejected - {{ $('Webhook').item.json.body.fullName }}",
+        "emailType": "text",
+        "message": "=A lead was automatically rejected as likely spam/fake.\n\nName: {{ $('Webhook').item.json.body.fullName }}\nEmail: {{ $('Webhook').item.json.body.email }}\nPhone: {{ $('Webhook').item.json.body.phone }}\n\nSpam Score: {{ $('Lead Score').item.json.spamScore }}\nReasons: {{ $('Lead Score').item.json.spamReasons.join(', ') }}\n\nOriginal message: {{ $('Lead Score').item.json.translatedMessage }}",
+        "options": {}
+      },
+      "id": "c1000000-0000-0000-0000-0000000000a2",
+      "name": "Spam Rejected Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        656
+      ],
+      "webhookId": "5d35fe39-c59e-4db5-a2f6-ae8076a6ea3d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ynqzVxS4SwscQ8NN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts/search",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"filterGroups\": [\n    { \"filters\": [ { \"propertyName\": \"email\", \"operator\": \"EQ\", \"value\": \"{{ $json.lead.email }}\" } ] }\n  ],\n  \"properties\": [\"email\", \"lead_score\", \"lead_category\", \"priority\"],\n  \"limit\": 1\n}",
+        "options": {}
+      },
+      "id": "c1000000-0000-0000-0000-0000000000a3",
+      "name": "Search Existing Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1248,
+        464
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "htGcNVPLuWVqwGIf",
+          "name": "HubSpot Service Key account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $('Lead Score').item.json;\nconst results = $json.results || [];\nconst existing = results[0];\nconst isReturning = !!existing;\nreturn { ...data, isReturning, previousScore: existing?.properties?.lead_score ?? null, previousCategory: existing?.properties?.lead_category ?? null, hubspotContactId: existing?.id ?? null };"
+      },
+      "id": "c1000000-0000-0000-0000-0000000000a4",
+      "name": "Prepare Dedup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1472,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts/batch/upsert",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"inputs\": [\n    {\n      \"idProperty\": \"email\",\n      \"id\": \"{{ $json.lead.email }}\",\n      \"properties\": {\n        \"email\": \"{{ $json.lead.email }}\",\n        \"firstname\": \"{{ $json.lead.fullName.split(' ')[0] }}\",\n        \"lastname\": \"{{ $json.lead.fullName.split(' ').slice(1).join(' ') }}\",\n        \"phone\": \"{{ $json.lead.phone }}\",\n        \"lead_score\": \"{{ $json.leadScore }}\",\n        \"lead_category\": \"{{ $json.leadCategory }}\",\n        \"priority\": \"{{ $json.priority }}\",\n        \"intent\": \"{{ $json.ai.intent }}\",\n        \"urgency\": \"{{ $json.ai.urgency }}\",\n        \"ai_summary\": \"{{ $json.ai.summary }}\",\n        \"budget\": \"{{ $json.property.budget }}\",\n        \"property_type\": \"{{ $json.property.propertyType }}\",\n        \"preferred_location\": \"{{ $json.property.location }}\",\n        \"bedrooms\": \"{{ $json.property.bedrooms }}\",\n        \"timeline\": \"{{ $json.ai.timeline }}\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "3d767e0c-f703-4678-99b0-ccf3a06c496e",
+      "name": "Create Contact on HubSpot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1696,
+        464
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "htGcNVPLuWVqwGIf",
+          "name": "HubSpot Service Key account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a real estate customer success assistant for PrimeNest Realty. Write a short, warm, professional reply email BODY (plain text only, no subject line, no markdown, no placeholders).\n\nWrite the email in the lead's language given below.\n\nAdapt the tone to the lead category:\n- Hot: enthusiastic and urgent; reassure them a property consultant will call within the hour.\n- Warm: helpful; promise a shortlist of matching properties within one business day.\n- Cold: friendly; promise to keep them updated with new listings that match their preferences.\n\nPersonalise using the lead's name, property type, bedrooms, location, budget and timeline. If the customer is a returning lead, acknowledge it warmly. Keep it under 120 words. Sign off as 'PrimeNest Realty'.\n\nReturn ONLY the email body text."
+            },
+            {
+              "content": "={{\n`Lead category: ${$('Lead Score').item.json.leadCategory}\nReply language: ${$('Lead Score').item.json.language}\nName: ${$('Prepare Dedup').item.json.lead.fullName}\nIntent: ${$('Lead Score').item.json.ai.intent}\nProperty type: ${$('Prepare Dedup').item.json.property.propertyType}\nBedrooms: ${$('Prepare Dedup').item.json.property.bedrooms}\nLocation: ${$('Prepare Dedup').item.json.property.location}\nBudget: ${$('Prepare Dedup').item.json.property.budget}\nTimeline: ${$('Prepare Dedup').item.json.property.timeline}\nReturning customer: ${$('Prepare Dedup').item.json.isReturning}\nOriginal message: ${$('Lead Score').item.json.translatedMessage}`\n}}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "c1000000-0000-0000-0000-0000000000a5",
+      "name": "AI Generate Email",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        1920,
+        464
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "n8n credits",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = $json.output?.[0]?.content?.[0]?.text ?? $json.text ?? \"\";\nconst lead = $('Prepare Dedup').item.json;\nreturn { ...lead, emailBody: String(raw).trim() };"
+      },
+      "id": "c1000000-0000-0000-0000-0000000000a6",
+      "name": "Parse Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2272,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Cq8w1QrhVPdPTpu04EVKKdLzVrI8nTxAlbcNWpwVgEw",
+          "mode": "list",
+          "cachedResultName": "Log Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Cq8w1QrhVPdPTpu04EVKKdLzVrI8nTxAlbcNWpwVgEw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Cq8w1QrhVPdPTpu04EVKKdLzVrI8nTxAlbcNWpwVgEw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Received At": "={{ $json.metadata.receivedAt }}",
+            "Lead ID": "={{ $json.metadata.leadId }}",
+            "Source": "={{ $json.source }}",
+            "First Name": "={{ $json.lead.firstName }}",
+            "Full Name": "={{ $json.lead.fullName }}",
+            "Last Name": "={{ $json.lead.lastName }}",
+            "Email": "={{ $json.lead.email }}",
+            "Phone": "={{ $json.lead.phone }}",
+            "Budget": "={{ $json.property.budget }}",
+            "Location": "={{ $json.property.location }}",
+            "Property Type": "={{ $json.property.propertyType }}",
+            "Bedrooms": "={{ $json.property.bedrooms }}",
+            "Timeline": "={{ $json.property.timeline }}",
+            "Customer Message": "={{ $json.message }}",
+            "Lead Category": "={{ $json.leadCategory }}",
+            "Lead Score": "={{ $json.leadScore }}",
+            "Priority": "={{ $json.priority }}",
+            "Intent": "={{ $json.ai.intent }}",
+            "Urgency": "={{ $json.ai.urgency }}",
+            "Budget Suitable": "={{ $json.ai.budgetSuitable }}",
+            "AI Timeline": "={{ $json.ai.timeline }}",
+            "AI Summary": "={{ $json.ai.summary }}",
+            "Recommended Action": "={{ $json.ai.recommendedAction }}",
+            "Sentiment": "={{ $json.ai.sentiment }}",
+            "Language": "={{ $json.ai.language }}",
+            "Spam Score": "={{ $json.spamScore }}",
+            "Is Spam": "={{ $json.isSpam }}",
+            "Status": "={{ $('AI Generate Email').item.json.output[0].status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Lead ID",
+              "displayName": "Lead ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Received At",
+              "displayName": "Received At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "First Name",
+              "displayName": "First Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Name",
+              "displayName": "Last Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Budget",
+              "displayName": "Budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Property Type",
+              "displayName": "Property Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Bedrooms",
+              "displayName": "Bedrooms",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timeline",
+              "displayName": "Timeline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer Message",
+              "displayName": "Customer Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lead Score",
+              "displayName": "Lead Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lead Category",
+              "displayName": "Lead Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Priority",
+              "displayName": "Priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Intent",
+              "displayName": "Intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Urgency",
+              "displayName": "Urgency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Budget Suitable",
+              "displayName": "Budget Suitable",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Timeline",
+              "displayName": "AI Timeline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Summary",
+              "displayName": "AI Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recommended Action",
+              "displayName": "Recommended Action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sentiment",
+              "displayName": "Sentiment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Language",
+              "displayName": "Language",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Spam Score",
+              "displayName": "Spam Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Is Spam",
+              "displayName": "Is Spam",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Assigned Agent",
+              "displayName": "Assigned Agent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Contact Attempts",
+              "displayName": "Contact Attempts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Contact Date",
+              "displayName": "Last Contact Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Next Follow-up",
+              "displayName": "Next Follow-up",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Follow-up Status",
+              "displayName": "Follow-up Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Meeting Scheduled",
+              "displayName": "Meeting Scheduled",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Deal Stage",
+              "displayName": "Deal Stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Won/Lost",
+              "displayName": "Won/Lost",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "HubSpot Contact ID",
+              "displayName": "HubSpot Contact ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "c1000000-0000-0000-0000-0000000000c1",
+      "name": "Log Lead to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2496,
+        464
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8dT2NZR3hwpZBfRE",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Lead Score').item.json.leadCategory }}",
+                    "rightValue": "Hot",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "6fd71486-5add-48ac-814c-8cd193e274d1"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Hot Lead"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "1ca7d64c-7b62-4bf4-8030-2ae908cb9da2",
+                    "leftValue": "={{ $('Lead Score').item.json.leadCategory }}",
+                    "rightValue": "Warm",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Warm Lead"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "8a5d2ce5-81d1-4f2b-a648-a61ab5d8a6b8",
+                    "leftValue": "={{ $('Lead Score').item.json.leadCategory }}",
+                    "rightValue": "Cold",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Cold Lead"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "71a5351a-8e6e-42b9-babb-2970a8034e34",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2720,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/tasks",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n    \"hs_task_subject\": \"Call {{ $('Prepare Dedup').item.json.lead.fullName }} ({{ $('Lead Score').item.json.priority }}) - HOT lead\",\n    \"hs_task_body\": \"{{ $('Lead Score').item.json.ai.recommendedAction }}\",\n    \"hs_task_status\": \"NOT_STARTED\",\n    \"hs_task_priority\": \"HIGH\",\n    \"hs_timestamp\": \"{{ $now.plus({ minutes: 30 }).toMillis() }}\"\n  },\n  \"associations\": [\n    {\n      \"to\": { \"id\": \"{{ $('Create Contact on HubSpot').item.json.results[0].id }}\" },\n      \"types\": [ { \"associationCategory\": \"HUBSPOT_DEFINED\", \"associationTypeId\": 204 } ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "c1000000-0000-0000-0000-0000000000b2",
+      "name": "Create Task (Hot)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2944,
+        272
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "htGcNVPLuWVqwGIf",
+          "name": "HubSpot Service Key account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "totheapexdomain@gmail.com",
+        "subject": "=🔥 HOT LEAD - {{ $('Webhook').item.json.body.fullName }} - {{ $('Webhook').item.json.body.location }}",
+        "emailType": "text",
+        "message": "=🔥 HOT LEAD\n\nName: {{ $('Webhook').item.json.body.fullName }}\nLead ID: {{ $('Lead Score').item.json.metadata.leadId }}\nReturning lead: {{ $('Prepare Dedup').item.json.isReturning }}\nPrevious Score: {{ $('Prepare Dedup').item.json.previousScore }}\nCurrent Score: {{ $('Lead Score').item.json.leadScore }}\n\nBudget: {{ $('Webhook').item.json.body.budget }}\nProperty: {{ $('Webhook').item.json.body.propertyType }}\nLocation: {{ $('Webhook').item.json.body.location }}\nBedrooms: {{ $('Webhook').item.json.body.bedrooms }}\nTimeline: {{ $('Webhook').item.json.body.timeline }}\n\nUrgency: {{ $('Lead Score').item.json.ai.urgency }}\nSentiment: {{ $('Lead Score').item.json.sentiment }} / {{ $('Lead Score').item.json.emotion }}\nPriority: {{ $('Lead Score').item.json.priority }}\nSpam Score: {{ $('Lead Score').item.json.spamScore }}\nLanguage: {{ $('Lead Score').item.json.language }}\n\nMessage (translated): {{ $('Lead Score').item.json.translatedMessage }}\n\nAI Summary: {{ $('Lead Score').item.json.ai.summary }}\nRecommended Action: {{ $('Lead Score').item.json.ai.recommendedAction }}",
+        "options": {}
+      },
+      "id": "4fa1f502-b416-40b3-a314-9c6815b91c63",
+      "name": "HOT Lead Agent",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        3168,
+        272
+      ],
+      "webhookId": "5d35fe39-c59e-4db5-a2f6-ae8076a6ea3d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ynqzVxS4SwscQ8NN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.email }}",
+        "subject": "Thanks for your enquiry - PrimeNest Realty",
+        "emailType": "text",
+        "message": "={{ $('Parse Email').item.json.emailBody }}",
+        "options": {}
+      },
+      "id": "9dca450a-6d28-401d-95e8-d9e633102a49",
+      "name": "Send a message",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        3392,
+        272
+      ],
+      "webhookId": "c6b73b46-12db-463b-88a9-0ff3ec326663",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ynqzVxS4SwscQ8NN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "U0BLZD4A1MW",
+          "mode": "list",
+          "cachedResultName": "totheapexdomain"
+        },
+        "text": "=🔥 *HOT LEAD*\nName: {{ $('Prepare Dedup').item.json.lead.fullName }}\nBudget: {{ $('Prepare Dedup').item.json.property.budget }}\nLocation: {{ $('Prepare Dedup').item.json.property.location }}\nBedrooms: {{ $('Prepare Dedup').item.json.property.bedrooms }}\nPriority: {{ $('Lead Score').item.json.priority }}\nScore: {{ $('Lead Score').item.json.leadScore }}\nPhone: {{ $('Prepare Dedup').item.json.lead.phone }}\nHubSpot Contact ID: {{ $('Create Contact on HubSpot').item.json.results[0].id }}",
+        "otherOptions": {}
+      },
+      "id": "c1000000-0000-0000-0000-0000000000d1",
+      "name": "Notify Slack (Hot)",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        3616,
+        272
+      ],
+      "webhookId": "aff9b919-1951-455d-8967-35e0b05f4169",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "aBVwvnVmdGBGAxB8",
+          "name": "Slack account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "from": "+14155238886",
+        "to": "+447449708091",
+        "toWhatsapp": true,
+        "message": "=New HOT lead: {{ $('Prepare Dedup').item.json.lead.fullName }} | Budget {{ $('Prepare Dedup').item.json.property.budget }} | {{ $('Prepare Dedup').item.json.property.location }} | Phone {{ $('Prepare Dedup').item.json.lead.phone }} | Call immediately.",
+        "options": {}
+      },
+      "id": "c1000000-0000-0000-0000-0000000000d2",
+      "name": "WhatsApp Alert (Hot)",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        3840,
+        272
+      ],
+      "credentials": {
+        "twilioApi": {
+          "id": "3gRdUxT148EwLLES",
+          "name": "Twilio account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Next business day at 14:00 Africa/Lagos (UTC+1 => 13:00 UTC)\nconst now = new Date();\nlet d = new Date(now.getTime() + 24*60*60*1000);\nd.setUTCHours(13,0,0,0);\n// skip weekend (Sat=6, Sun=0) in Lagos which matches UTC day here\nlet day = d.getUTCDay();\nwhile (day === 6 || day === 0) { d = new Date(d.getTime() + 24*60*60*1000); d.setUTCHours(13,0,0,0); day = d.getUTCDay(); }\nconst startISO = d.toISOString();\nconst endISO = new Date(d.getTime() + 60*60*1000).toISOString();\nlet human;\ntry { human = d.toLocaleString('en-GB', { timeZone: 'Africa/Lagos', weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' }); } catch (e) { human = startISO; }\nreturn { bookingStartISO: startISO, bookingEndISO: endISO, bookingHuman: human };"
+      },
+      "id": "c1000000-0000-0000-0000-0000000000d4",
+      "name": "Prepare Booking",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4064,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "totheapexdomain@gmail.com",
+          "mode": "list",
+          "cachedResultName": "totheapexdomain@gmail.com"
+        },
+        "start": "={{ $('Prepare Booking').item.json.bookingStartISO }}",
+        "end": "={{ $('Prepare Booking').item.json.bookingEndISO }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ $('Prepare Dedup').item.json.lead.email }}"
+          ],
+          "description": "=Tentative viewing for HOT lead.\nName: {{ $('Prepare Dedup').item.json.lead.fullName }}\nPhone: {{ $('Prepare Dedup').item.json.lead.phone }}\nBudget: {{ $('Prepare Dedup').item.json.property.budget }}\nLocation: {{ $('Prepare Dedup').item.json.property.location }}\nProperty: {{ $('Prepare Dedup').item.json.property.propertyType }} / {{ $('Prepare Dedup').item.json.property.bedrooms }} beds",
+          "summary": "=Property viewing - {{ $('Prepare Dedup').item.json.lead.fullName }}"
+        }
+      },
+      "id": "c1000000-0000-0000-0000-0000000000d5",
+      "name": "Create Calendar Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        4288,
+        272
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "m1CyPoYB5mvQUai7",
+          "name": "Google Calendar account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Cq8w1QrhVPdPTpu04EVKKdLzVrI8nTxAlbcNWpwVgEw",
+          "mode": "list",
+          "cachedResultName": "Log Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Cq8w1QrhVPdPTpu04EVKKdLzVrI8nTxAlbcNWpwVgEw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1530820080,
+          "mode": "list",
+          "cachedResultName": "Properties",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Cq8w1QrhVPdPTpu04EVKKdLzVrI8nTxAlbcNWpwVgEw/edit#gid=1530820080"
+        },
+        "options": {}
+      },
+      "id": "c1000000-0000-0000-0000-0000000000d6",
+      "name": "Read Properties",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        4512,
+        272
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8dT2NZR3hwpZBfRE",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json).filter(r => r && Object.keys(r).length > 0);\nconst dedup = $('Prepare Dedup').first().json;\nreturn [{ json: { properties: rows, lead: dedup.lead, preferences: dedup.property, bookingHuman: $('Prepare Booking').first().json.bookingHuman } }];"
+      },
+      "id": "c1000000-0000-0000-0000-0000000000d7",
+      "name": "Aggregate Properties",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4736,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a real estate property matching assistant. Given a list of available property listings and a lead's preferences (budget, location, bedrooms), select the best up to 3 matching properties. For each, output a short line with the property name/details and a match score from 0-100. If no listings are provided or none match, reply exactly: 'NO_MATCHES'. Return plain text only, no markdown."
+            },
+            {
+              "content": "={{\n`Lead preferences:\nBudget: ${$json.preferences.budget}\nLocation: ${$json.preferences.location}\nBedrooms: ${$json.preferences.bedrooms}\n\nAvailable properties (JSON):\n${JSON.stringify($json.properties)}`\n}}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "c1000000-0000-0000-0000-0000000000d8",
+      "name": "AI Property Match",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        4960,
+        272
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "n8n credits",
+          "__aiGatewayManaged": true
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = $json.output?.[0]?.content?.[0]?.text ?? $json.text ?? \"\";\nconst recsText = String(raw).trim();\nconst hasMatches = recsText && recsText.toUpperCase() !== 'NO_MATCHES';\nreturn { recsText: hasMatches ? recsText : '', hasMatches, bookingHuman: $('Prepare Booking').item.json.bookingHuman, lead: $('Prepare Dedup').item.json.lead };"
+      },
+      "id": "c1000000-0000-0000-0000-0000000000d9",
+      "name": "Parse Recs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5312,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.email }}",
+        "subject": "Your property matches & viewing - PrimeNest Realty",
+        "emailType": "text",
+        "message": "=Hi {{ $('Prepare Dedup').item.json.lead.fullName }},\n\nWe've tentatively reserved a viewing for you on {{ $('Prepare Booking').item.json.bookingHuman }}. Please reply to confirm or suggest another time.\n\n{{ $json.hasMatches ? 'Here are some properties matching your requirements:\\n\\n' + $json.recsText : 'Our consultant will share matching properties with you shortly.' }}\n\nBest regards,\nPrimeNest Realty",
+        "options": {}
+      },
+      "id": "c1000000-0000-0000-0000-0000000000da",
+      "name": "Property & Booking Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        5536,
+        272
+      ],
+      "webhookId": "c6b73b46-12db-463b-88a9-0ff3ec326663",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ynqzVxS4SwscQ8NN",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/tasks",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n    \"hs_task_subject\": \"Follow up with {{ $('Prepare Dedup').item.json.lead.fullName }} ({{ $('Lead Score').item.json.priority }}) - Warm lead\",\n    \"hs_task_body\": \"{{ $('Lead Score').item.json.ai.recommendedAction }}\",\n    \"hs_task_status\": \"NOT_STARTED\",\n    \"hs_task_priority\": \"MEDIUM\",\n    \"hs_timestamp\": \"{{ $now.plus({ hours: 24 }).toMillis() }}\"\n  },\n  \"associations\": [\n    {\n      \"to\": { \"id\": \"{{ $('Create Contact on HubSpot').item.json.results[0].id }}\" },\n      \"types\": [ { \"associationCategory\": \"HUBSPOT_DEFINED\", \"associationTypeId\": 204 } ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "c1000000-0000-0000-0000-0000000000b3",
+      "name": "Create Task (Warm)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2944,
+        464
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "htGcNVPLuWVqwGIf",
+          "name": "HubSpot Service Key account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "totheapexdomain@gmail.com",
+        "subject": "=🟡 Warm Lead - {{ $('Webhook').item.json.body.fullName }}",
+        "emailType": "text",
+        "message": "=🟡 WARM LEAD - contact within 24 hours\n\nName: {{ $('Webhook').item.json.body.fullName }}\nLead ID: {{ $('Lead Score').item.json.metadata.leadId }}\nReturning lead: {{ $('Prepare Dedup').item.json.isReturning }}\nPrevious Score: {{ $('Prepare Dedup').item.json.previousScore }}\nCurrent Score: {{ $('Lead Score').item.json.leadScore }}\n\nBudget: {{ $('Webhook').item.json.body.budget }}\nProperty: {{ $('Webhook').item.json.body.propertyType }}\nLocation: {{ $('Webhook').item.json.body.location }}\nTimeline: {{ $('Webhook').item.json.body.timeline }}\n\nSentiment: {{ $('Lead Score').item.json.sentiment }} / {{ $('Lead Score').item.json.emotion }}\nPriority: {{ $('Lead Score').item.json.priority }}\nLanguage: {{ $('Lead Score').item.json.language }}\n\nAI Summary: {{ $('Lead Score').item.json.ai.summary }}",
+        "options": {}
+      },
+      "id": "0aab25fc-0e1f-473f-8f5f-95caabb6a3b9",
+      "name": "Warm Lead",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        3168,
+        464
+      ],
+      "webhookId": "5d35fe39-c59e-4db5-a2f6-ae8076a6ea3d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ynqzVxS4SwscQ8NN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.email }}",
+        "subject": "Thanks for your enquiry - PrimeNest Realty",
+        "emailType": "text",
+        "message": "={{ $('Parse Email').item.json.emailBody }}",
+        "options": {}
+      },
+      "id": "8f0e03f8-06a0-4cd9-a9bb-b865b68af8ad",
+      "name": "Send a message1",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        3392,
+        464
+      ],
+      "webhookId": "c6b73b46-12db-463b-88a9-0ff3ec326663",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ynqzVxS4SwscQ8NN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "totheapexdomain@gmail.com",
+        "subject": "=❄️ Cold Lead - {{ $('Webhook').item.json.body.fullName }}",
+        "emailType": "text",
+        "message": "=❄️ COLD LEAD - add to nurture campaign\n\nName: {{ $('Webhook').item.json.body.fullName }}\nLead ID: {{ $('Lead Score').item.json.metadata.leadId }}\nReturning lead: {{ $('Prepare Dedup').item.json.isReturning }}\nCurrent Score: {{ $('Lead Score').item.json.leadScore }}\n\nBudget: {{ $('Webhook').item.json.body.budget }}\nLocation: {{ $('Webhook').item.json.body.location }}\nLanguage: {{ $('Lead Score').item.json.language }}\n\nAI Summary: {{ $('Lead Score').item.json.ai.summary }}",
+        "options": {}
+      },
+      "id": "55239bb0-cb21-4a96-875c-a03fafdd70a5",
+      "name": "Cold Lead",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2944,
+        656
+      ],
+      "webhookId": "5d35fe39-c59e-4db5-a2f6-ae8076a6ea3d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ynqzVxS4SwscQ8NN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.email }}",
+        "subject": "Thanks for your interest - PrimeNest Realty",
+        "emailType": "text",
+        "message": "={{ $('Parse Email').item.json.emailBody }}",
+        "options": {}
+      },
+      "id": "6ebe5567-021e-44fa-9633-dccdb0de5589",
+      "name": "Send a message2",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        3168,
+        656
+      ],
+      "webhookId": "c6b73b46-12db-463b-88a9-0ff3ec326663",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ynqzVxS4SwscQ8NN",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Info": {
+      "main": [
+        [
+          {
+            "node": "AI Analyze Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Analyze Lead": {
+      "main": [
+        [
+          {
+            "node": "Lead Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Score": {
+      "main": [
+        [
+          {
+            "node": "Is Spam?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Spam?": {
+      "main": [
+        [
+          {
+            "node": "Spam Rejected Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search Existing Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Existing Contact": {
+      "main": [
+        [
+          {
+            "node": "Prepare Dedup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Dedup": {
+      "main": [
+        [
+          {
+            "node": "Create Contact on HubSpot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Contact on HubSpot": {
+      "main": [
+        [
+          {
+            "node": "AI Generate Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Generate Email": {
+      "main": [
+        [
+          {
+            "node": "Parse Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Email": {
+      "main": [
+        [
+          {
+            "node": "Log Lead to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Lead to Sheet": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Create Task (Hot)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Task (Warm)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cold Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Task (Hot)": {
+      "main": [
+        [
+          {
+            "node": "HOT Lead Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HOT Lead Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Notify Slack (Hot)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Slack (Hot)": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Alert (Hot)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Alert (Hot)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Booking": {
+      "main": [
+        [
+          {
+            "node": "Create Calendar Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Calendar Event": {
+      "main": [
+        [
+          {
+            "node": "Read Properties",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Properties": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Properties",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Properties": {
+      "main": [
+        [
+          {
+            "node": "AI Property Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Property Match": {
+      "main": [
+        [
+          {
+            "node": "Parse Recs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Recs": {
+      "main": [
+        [
+          {
+            "node": "Property & Booking Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Task (Warm)": {
+      "main": [
+        [
+          {
+            "node": "Warm Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Warm Lead": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cold Lead": {
+      "main": [
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "588009fc-4edf-4c92-ac3e-14178b6674e7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "25110ea3a91db5db30b33500593a2bdacd005a9bc9fa082f105b3a8d820b1352"
+  },
+  "nodeGroups": [],
+  "id": "msmvMLyzbI5QLW9x",
+  "tags": []
+}

@@ -1,0 +1,679 @@
+{
+  "name": "DomainAgents — AI Lead Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "DomainAgents Lead Engine",
+        "formDescription": "Paste domains (one per line, max 10). Agents will find buyers + emails.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "domains",
+              "fieldType": "textarea",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Domain Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        208,
+        -96
+      ],
+      "id": "3000f330-1fba-454b-99cf-f0f22624f217",
+      "webhookId": "edb10df0-0e18-4f19-a039-c250ae6649be"
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst raw = j.domains || j['domains'] || '';\nconst domains = String(raw).split('\\n')\n  .map(d => d.trim().replace(/^https?:\\/\\//,'').replace(/\\/+$/,''))\n  .filter(Boolean).slice(0, 10);\nif (!domains.length) throw new Error('No domains provided');\nreturn domains.map(d => ({ json: { domain: d } }));"
+      },
+      "name": "Split Domains",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        -96
+      ],
+      "id": "cf841289-299b-4f3c-8e12-ca18923d81a5"
+    },
+    {
+      "parameters": {
+        "jsCode": "const PLAN_SYS = \"Classify this domain for premium domain sales prospecting. Return ONLY raw JSON:\\n{\\\"type\\\":\\\"geo\\\"|\\\"brandable\\\",\\\"city\\\":\\\"city name or empty\\\",\\\"state\\\":\\\"2-letter state or empty\\\",\\\"niche\\\":\\\"the primary service or industry\\\",\\\"buyerTypes\\\":[\\\"buyer type 1\\\",\\\"buyer type 2\\\",\\\"buyer type 3\\\",\\\"buyer type 4\\\",\\\"buyer type 5\\\"],\\\"discoverQueries\\\":[\\\"query1\\\",\\\"query2\\\",\\\"query3\\\",\\\"query4\\\",\\\"query5\\\",\\\"query6\\\",\\\"query7\\\",\\\"query8\\\",\\\"query9\\\",\\\"query10\\\"]}\\n\\nGenerate exactly 10 DIFFERENT Google search queries designed to discover HIGH-PROBABILITY END USERS that could realistically acquire the domain.\\n\\nPrioritize companies that:\\n- Have a strong brand or keyword match.\\n- Operate in the domain's primary industry.\\n- Could use the domain for a new product, service, or rebranding.\\n- Use weaker domains (.io, .ai, .xyz, .co, .app, country-code TLDs, long domains, hyphenated domains, or multiple-word domains).\\n- Recently launched products, expanded internationally, raised funding, or announced strategic growth.\\n- Have a clear commercial reason to acquire the domain.\\n\\nDo NOT recommend companies simply because they are startups or recently funded. Brand fit and acquisition likelihood are more important than funding.\\n\\nExclude companies whose products or services are unrelated to the domain's commercial intent.\\n\\nFor GEO domains:\\nGenerate search queries covering:\\n1. Primary service.\\n2. Closely related service.\\n3. Synonym.\\n4. Industry variation.\\n5. Best companies.\\n6. Fast-growing companies.\\n7. Award-winning companies.\\n8. Recently expanded companies.\\n9. Multi-location businesses.\\n10. Local business directories.\\n\\nExample for CaryPersonalInjury.com:\\n[\\n\\\"personal injury lawyer Cary NC\\\",\\n\\\"car accident attorney Cary NC\\\",\\n\\\"injury law firm Cary North Carolina\\\",\\n\\\"best personal injury lawyer Cary\\\",\\n\\\"Cary accident lawyer\\\",\\n\\\"Cary law firms personal injury\\\",\\n\\\"growing law firms Cary NC\\\",\\n\\\"Top injury attorneys Cary\\\",\\n\\\"Cary legal services injury\\\",\\n\\\"Cary personal injury firms\\\"\\n]\\n\\nFor BRANDABLE domains:\\nGenerate search queries that discover buyers from DIFFERENT angles including:\\n- Product launches\\n- Startup launches\\n- Seed/Series A/B funding\\n- VC portfolio companies\\n- Accelerator cohorts (Y Combinator, Techstars, Antler, etc.)\\n- Product Hunt launches\\n- Companies using .io, .ai, .xyz, .co or long domains\\n- Companies expanding into the domain's niche\\n- Industry directories\\n- Emerging companies in the target market\\n\\nExample for RemitArc.com:\\n[\\n\\\"cross-border payments startup\\\",\\n\\\"remittance startup funding\\\",\\n\\\"international money transfer startup\\\",\\n\\\"stablecoin payment companies\\\",\\n\\\"YC fintech remittance startups\\\",\\n\\\"Product Hunt payment app\\\",\\n\\\"fintech using .io domain payments\\\",\\n\\\"embedded finance startup\\\",\\n\\\"cross-border fintech Series A\\\",\\n\\\"money transfer platform startup\\\"\\n]\\n\\nNever use Google operators such as site:, inurl:, intitle:, or quotation marks in the search queries. Return only valid JSON.\";\n\nreturn $input.all().map(item => {\n  const domain = item.json.domain;\n  return {\n    json: {\n      domain,\n      payload: {\n        model: 'claude-sonnet-4-5',\n        max_tokens: 600,\n        system: PLAN_SYS,\n        messages: [\n          {\n            role: 'user',\n            content: 'Domain: ' + domain\n          }\n        ]\n      }\n    }\n  };\n});"
+      },
+      "name": "Build Plan Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        -96
+      ],
+      "id": "bcf036eb-d635-4722-9425-ea7d0b679945"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-API-KEY",
+              "value": ""
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.payload }}",
+        "options": {}
+      },
+      "name": "Claude: Plan Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        -96
+      ],
+      "id": "5ade019e-b705-4923-9880-ddaeaf282576"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prevAll = $('Build Plan Payload').all();\nconst out = [];\n$input.all().forEach((item, i) => {\n  const prev = prevAll[i].json;\n  const txt = (item.json.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();\n  const s = txt.indexOf('{'), e = txt.lastIndexOf('}');\n  if (s === -1) throw new Error('Plan agent returned no JSON for ' + prev.domain);\n  const plan = JSON.parse(txt.slice(s, e + 1));\n  const isGeo = (plan.type || '').toLowerCase() === 'geo';\n  const queries = (plan.discoverQueries && plan.discoverQueries.length ? plan.discoverQueries : [plan.discoverQuery]).slice(0, 3);\n  queries.forEach(q => {\n    const clean = String(q).replace(/site:\\S+/gi, m => m.replace(/^site:/i,'').replace(/\\.\\w+$/,'')).replace(/[\"']/g, '').trim();\n    out.push({ json: {\n      domain: prev.domain, plan,\n      searchUrl: isGeo ? 'https://google.serper.dev/places' : 'https://google.serper.dev/search',\n      serperBody: { q: clean, num: 20, gl: 'us' }\n    }});\n  });\n});\nreturn out;"
+      },
+      "name": "Parse Plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        -96
+      ],
+      "id": "edf71ecd-a2c5-4f46-b441-8c0809358db8"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.searchUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": ""
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.serperBody }}",
+        "options": {}
+      },
+      "name": "Serper: Discover Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1328,
+        -96
+      ],
+      "id": "e05b1dd9-2019-42e0-9eb3-1f77dcb66a76"
+    },
+    {
+      "parameters": {
+        "jsCode": "const DISCOVER_SYS = \"You are an elite premium domain acquisition lead discovery agent. You receive a domain name, its classification, and merged Google search results. Your job is to identify REAL companies that have the highest probability of acquiring the domain.\\n\\nYour primary objective is QUALITY over quantity. Never invent companies or merge information from different companies with similar names.\\n\\nENTITY VERIFICATION:\\nBefore returning a company, verify that its name, website, industry, funding, description, and search results all refer to the SAME organization. If multiple companies share the same name and the identity cannot be confidently verified, exclude the company.\\n\\nGEO DOMAINS:\\nProspects are real businesses operating in the target city and niche.\\nInclude small, medium, and established private businesses.\\nNational directories, review sites, marketplaces, government websites, franchises, and listing websites (Yelp, Clutch, Expertise, FindLaw, Avvo, Justia, etc.) are NEVER prospects.\\nHowever, businesses listed inside those directories ARE prospects.\\nIf the website cannot be verified, leave it empty.\\n\\nBRANDABLE DOMAINS:\\nProspects may include startups, private companies, scale-ups, venture-backed companies, and established businesses IF they have a credible reason to acquire the domain.\\nDo NOT restrict prospects only to early-stage startups.\\n\\nPrioritize companies that:\\n- Have an excellent keyword or brand match.\\n- Operate directly within the domain's niche.\\n- Could use the domain for a product, service, marketing campaign, expansion, rebrand, or defensive acquisition.\\n- Use weaker domains (.io, .ai, .xyz, .co, .app, country-code TLDs, long domains, hyphenated domains, or multiple-word domains).\\n- Recently launched products, entered new markets, raised funding, or announced strategic growth.\\n\\nCompanies already operating on a strong matching .com should generally receive a lower score unless the domain has clear product-branding or defensive acquisition value.\\n\\nExclude:\\n- Public directories\\n- Review sites\\n- Government organizations\\n- Universities\\n- Accelerators\\n- Incubators\\n- VC firms\\n- News websites\\n- Blog articles\\n- Conferences\\n- Trade associations\\n- Companies whose products are unrelated to the domain's commercial purpose\\n\\nReturn EVERY genuine buyer found in the search results.\\nDo NOT pad results.\\nDo NOT invent prospects.\\nIf no genuine prospects exist, return an empty prospects array.\\n\\nScore every company using:\\nBrand Fit (0-100)\\nKeyword Match (0-100)\\nCommercial Fit (0-100)\\nLikelihood to Buy (0-100)\\nOverall Score (0-100)\\n\\nPriority:\\nHot\\nWarm\\nCold\\n\\nReturn ONLY valid raw JSON:\\n{\\\"prospects\\\":[{\\\"name\\\":\\\"Company name\\\",\\\"website\\\":\\\"company domain or empty\\\",\\\"industry\\\":\\\"industry or Unknown\\\",\\\"why\\\":\\\"One concise sentence explaining why they are a realistic buyer.\\\",\\\"currentDomainStrength\\\":\\\"Strong .com|Weak .io|Weak .ai|Long domain|Unknown\\\",\\\"brandFit\\\":95,\\\"keywordMatch\\\":90,\\\"commercialFit\\\":92,\\\"likelihoodToBuy\\\":88,\\\"score\\\":91,\\\"priority\\\":\\\"Hot\\\"}]}\";\n\nconst prevAll = $('Parse Plan').all();\n\nconst groups = {};\n\n$input.all().forEach((item, i) => {\n  const prev = prevAll[i].json;\n\n  if (!groups[prev.domain]) {\n    groups[prev.domain] = {\n      domain: prev.domain,\n      plan: prev.plan,\n      organic: [],\n      places: []\n    };\n  }\n\n  const serp = item.json;\n\n  groups[prev.domain].organic.push(...(serp.organic || []));\n  groups[prev.domain].places.push(...(serp.places || []));\n});\n\nreturn Object.values(groups).map(g => {\n\n  const seenP = new Set();\n  const seenO = new Set();\n\n  const places = g.places\n    .filter(p => {\n      const k = (p.title || '').toLowerCase();\n      if (seenP.has(k)) return false;\n      seenP.add(k);\n      return true;\n    })\n    .slice(0, 25)\n    .map(p => ({\n      name: p.title,\n      website: p.website || '',\n      rating: p.rating || '',\n      reviews: p.ratingCount || '',\n      address: p.address || ''\n    }));\n\n  const organic = g.organic\n    .filter(r => {\n      if (seenO.has(r.link)) return false;\n      seenO.add(r.link);\n      return true;\n    })\n    .slice(0, 20)\n    .map(r => ({\n      title: r.title,\n      link: r.link,\n      snippet: r.snippet\n    }));\n\n  const user =\n    'Domain: ' + g.domain +\n    '\\nClassification: ' + JSON.stringify(g.plan) +\n    '\\nMerged Google Results:\\n' +\n    JSON.stringify({\n      organic,\n      places\n    }) +\n    '\\n\\nIdentify EVERY genuine buyer now.';\n\n  return {\n    json: {\n      domain: g.domain,\n      plan: g.plan,\n      payload: {\n        model: 'claude-sonnet-4-5',\n        max_tokens: 6000,\n        system: DISCOVER_SYS,\n        messages: [\n          {\n            role: 'user',\n            content: user\n          }\n        ]\n      }\n    }\n  };\n});"
+      },
+      "name": "Build Discover Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        -96
+      ],
+      "id": "bf590903-47f6-4321-ae80-6414e3628937"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-API-KEY",
+              "value": ""
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.payload }}",
+        "options": {}
+      },
+      "name": "Claude: Discover Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1776,
+        -96
+      ],
+      "id": "8d0f2aa1-0284-4f2a-bbee-586e372543f4"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prevAll = $('Build Discover Payload').all();\n\nconst out = [];\n\n$input.all().forEach((item, i) => {\n\n  const prev = prevAll[i].json;\n\n  const txt = (item.json.content || [])\n    .filter(b => b.type === 'text')\n    .map(b => b.text)\n    .join('')\n    .trim();\n\n  const s = txt.indexOf('{');\n  const e = txt.lastIndexOf('}');\n\n  if (s === -1 || e === -1) {\n    throw new Error('Discover agent returned no JSON for ' + prev.domain);\n  }\n\n  const data = JSON.parse(txt.slice(s, e + 1));\n\n  (data.prospects || []).forEach(p => {\n\n    out.push({\n      json: {\n\n        domain: prev.domain,\n\n        type: prev.plan.type || '',\n\n        city: prev.plan.city || '',\n\n        niche: prev.plan.niche || '',\n\n        prospect: {\n          name: p.name || '',\n          website: p.website || '',\n          industry: p.industry || 'Unknown',\n          why: p.why || '',\n\n          priority: p.priority || '',\n\n          score: Number(p.score || 0),\n\n          brandFit: Number(p.brandFit || 0),\n\n          keywordMatch: Number(p.keywordMatch || 0),\n\n          commercialFit: Number(p.commercialFit || 0),\n\n          likelihoodToBuy: Number(p.likelihoodToBuy || 0),\n\n          currentDomainStrength: p.currentDomainStrength || 'Unknown'\n        },\n\n        serperBody: {\n          q: '\"' + (p.name || '') + '\" ' + (p.website || '') + ' contact email owner',\n          num: 8\n        }\n\n      }\n    });\n\n  });\n\n});\n\nreturn out;"
+      },
+      "name": "Parse Prospects",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        -96
+      ],
+      "id": "42f57078-ad0d-47d7-9d88-b381c6c42776"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": ""
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.serperBody }}",
+        "options": {}
+      },
+      "name": "Serper: Enrich Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2224,
+        -96
+      ],
+      "id": "9a86d938-1eb0-4040-a35f-86ba651912be"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ENRICH_SYS = \"You are an elite B2B contact enrichment agent. You receive a company and Google search results about it. Your task is to extract ONLY information that is explicitly visible in the search results.\\n\\nIMPORTANT:\\n- Never fabricate or guess any information.\\n- Verify that all extracted information belongs to the SAME company.\\n- If search results appear to refer to multiple companies with similar names, only return information that can be confidently attributed to the requested company.\\n- If uncertain, return an empty string.\\n\\nExtract:\\n\\nemail:\\n- An email address that appears VERBATIM in the search results.\\n- If the company's website is known, the email domain MUST match the company domain.\\n- If the website is unknown, only return an email if the search results clearly show it belongs to the same company.\\n- Never infer or construct an email address.\\n\\ncontactName:\\n- Return the highest-ranking decision maker explicitly mentioned.\\n- Prioritize in this order:\\nFounder\\nCEO\\nCo-Founder\\nOwner\\nManaging Director\\nPresident\\nChief Marketing Officer\\nMarketing Director\\nHead of Growth\\nBusiness Development Director\\nCTO\\nPartner\\n- Return ONLY one name.\\n- If none is visible, return an empty string.\\n\\nsignal:\\nReturn ONE concise business signal useful for domain sales outreach.\\nExamples:\\n- Recently raised funding\\n- Recently launched product\\n- International expansion\\n- AI product launch\\n- Uses .io domain\\n- Uses .ai domain\\n- Active blog\\n- Hiring\\n- Enterprise customers\\n- Award-winning company\\n- Growing rapidly\\n- New office\\n- Y Combinator company\\n- Techstars company\\n- 20+ years established\\n\\nIf no meaningful signal is visible, return an empty string.\\n\\nReturn ONLY valid raw JSON:\\n{\\\"email\\\":\\\"\\\",\\\"contactName\\\":\\\"\\\",\\\"signal\\\":\\\"\\\"}\";\n\nconst prevAll = $('Parse Prospects').all();\n\nreturn $input.all().map((item, i) => {\n\n  const prev = prevAll[i].json;\n  const serp = item.json;\n\n  const slim = (serp.organic || [])\n    .slice(0, 12)\n    .map(r => ({\n      title: r.title,\n      link: r.link,\n      snippet: r.snippet\n    }));\n\n  const user =\n    'Company: ' + prev.prospect.name +\n    ' (' + (prev.prospect.website || '') + ')' +\n    '\\nGoogle search results:\\n' +\n    JSON.stringify(slim) +\n    '\\n\\nExtract the contact information now.';\n\n  return {\n    json: {\n      ...prev,\n      payload: {\n        model: 'claude-sonnet-4-5',\n        max_tokens: 500,\n        system: ENRICH_SYS,\n        messages: [\n          {\n            role: 'user',\n            content: user\n          }\n        ]\n      }\n    }\n  };\n\n});"
+      },
+      "name": "Build Enrich Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2448,
+        -96
+      ],
+      "id": "eb5f60bb-3f7b-4cf6-a6d6-0248c876999f"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-API-KEY",
+              "value": ""
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.payload }}",
+        "options": {}
+      },
+      "name": "Claude: Enrich Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2672,
+        -96
+      ],
+      "id": "eb232354-69c2-4d32-9db5-f1e3e3bf53b7"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prevAll = $('Build Enrich Payload').all();\n\nreturn $input.all().map((item, i) => {\n\n  const prev = prevAll[i].json;\n\n  let e = {\n    email: '',\n    contactName: '',\n    signal: ''\n  };\n\n  try {\n    const txt = (item.json.content || [])\n      .filter(b => b.type === 'text')\n      .map(b => b.text)\n      .join('')\n      .trim();\n\n    const s = txt.indexOf('{');\n    const x = txt.lastIndexOf('}');\n\n    if (s !== -1 && x !== -1) {\n      e = JSON.parse(txt.slice(s, x + 1));\n    }\n  } catch (err) {}\n\n  return {\n    json: {\n      Domain: prev.domain,\n      Type: prev.type,\n      City: prev.city,\n      Niche: prev.niche,\n\n      Prospect: prev.prospect.name,\n      Website: prev.prospect.website || '',\n\n      Priority: prev.prospect.priority || '',\n      \"Overall Score\": prev.prospect.score || '',\n      \"Brand Fit\": prev.prospect.brandFit || '',\n      \"Keyword Match\": prev.prospect.keywordMatch || '',\n      \"Commercial Fit\": prev.prospect.commercialFit || '',\n      \"Buy Likelihood\": prev.prospect.likelihoodToBuy || '',\n\n      Why: prev.prospect.why || '',\n\n      Email: e.email || '',\n      Contact: e.contactName || '',\n      Signal: e.signal || '',\n\n      Status: 'New',\n      Date: new Date().toISOString().slice(0, 10)\n    }\n  };\n\n});"
+      },
+      "name": "Format Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2896,
+        -96
+      ],
+      "id": "aa9022f5-c383-460a-9d74-ae5af399b71f"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1XTqcj72GBLFN-Vrp38iMH3swi63BxScXtqRCNOf223I",
+          "mode": "list",
+          "cachedResultName": "DomainProspect",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XTqcj72GBLFN-Vrp38iMH3swi63BxScXtqRCNOf223I/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XTqcj72GBLFN-Vrp38iMH3swi63BxScXtqRCNOf223I/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Domain": "={{ $json.Domain }}",
+            "Type": "={{ $json.Type }}",
+            "City": "={{ $json.City }}",
+            "Niche": "={{ $json.Niche }}",
+            "Prospect": "={{ $json.Prospect }}",
+            "Website": "={{ $json.Website }}",
+            "Why": "={{ $json.Why }}",
+            "Email": "={{ $json.Email }}",
+            "Contact": "={{ $json.Contact }}",
+            "Signal": "={{ $json.Signal }}",
+            "Status": "={{ $json.Status }}",
+            "Date": "={{ $json.Date }}",
+            "Priority": "={{ $json.Priority }}",
+            "Overall Score": "={{ $json['Overall Score'] }}",
+            "Brand Fit": "={{ $json['Brand Fit'] }}",
+            "Keyword Match": "={{ $json['Keyword Match'] }}",
+            "Commercial Fit": "={{ $json['Commercial Fit'] }}",
+            "Buy Likelihood": "={{ $json['Buy Likelihood'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Domain",
+              "displayName": "Domain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Type",
+              "displayName": "Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "City",
+              "displayName": "City",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Niche",
+              "displayName": "Niche",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Prospect",
+              "displayName": "Prospect",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Website",
+              "displayName": "Website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Priority",
+              "displayName": "Priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Overall Score",
+              "displayName": "Overall Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Brand Fit",
+              "displayName": "Brand Fit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Keyword Match",
+              "displayName": "Keyword Match",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Commercial Fit",
+              "displayName": "Commercial Fit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Buy Likelihood",
+              "displayName": "Buy Likelihood",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Why",
+              "displayName": "Why",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Contact",
+              "displayName": "Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Signal",
+              "displayName": "Signal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "name": "Append to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3120,
+        -96
+      ],
+      "id": "d8b3c228-df61-4f20-9957-5d2c9c011abb",
+      "credentials": {
+        "googleApi": {
+          "id": "Dlx1iW1WCfX3S9NE",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Domain Form": {
+      "main": [
+        [
+          {
+            "node": "Split Domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Domains": {
+      "main": [
+        [
+          {
+            "node": "Build Plan Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Plan Payload": {
+      "main": [
+        [
+          {
+            "node": "Claude: Plan Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude: Plan Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Plan": {
+      "main": [
+        [
+          {
+            "node": "Serper: Discover Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Serper: Discover Search": {
+      "main": [
+        [
+          {
+            "node": "Build Discover Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Discover Payload": {
+      "main": [
+        [
+          {
+            "node": "Claude: Discover Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude: Discover Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Prospects": {
+      "main": [
+        [
+          {
+            "node": "Serper: Enrich Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Serper: Enrich Search": {
+      "main": [
+        [
+          {
+            "node": "Build Enrich Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Enrich Payload": {
+      "main": [
+        [
+          {
+            "node": "Claude: Enrich Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude: Enrich Agent": {
+      "main": [
+        [
+          {
+            "node": "Format Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Row": {
+      "main": [
+        [
+          {
+            "node": "Append to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "18d439a7-c09b-4a09-9152-7fbca32f8de1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "780b3b54698dd48070c152589fef13f0d6c0d3214b8eeccb343bd8d97a595503"
+  },
+  "nodeGroups": [],
+  "id": "nfBJXB53p1srJR1W",
+  "tags": []
+}

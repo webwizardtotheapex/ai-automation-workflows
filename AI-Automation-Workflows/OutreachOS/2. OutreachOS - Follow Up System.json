@@ -1,0 +1,443 @@
+{
+  "name": "2. OutreachOS - Follow Up System",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "q": "accepted your invitation",
+          "sender": "invitations@linkedin.com"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -1568,
+        96
+      ],
+      "id": "ae3a590c-37fc-41ab-8287-6b0f986c9852",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "QMeh7cH2DPJ6rHjY",
+          "name": "Gmail account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get subject and From field\nconst subject = $input.first().json.Subject || $input.first().json.subject || \"\";\nconst from = $input.first().json.From || $input.first().json.from || \"\";\n\n// Get full name from From field: \"Timothy Anthony via LinkedIn <email>\"\nconst fullName = from.split(\" via LinkedIn\")[0].trim();\n\n// Get first name from subject as backup\nconst subjectName = subject.split(\" accepted your invitation\")[0].trim();\n\n// Use From field name (more complete) or subject name as fallback\nconst name = fullName || subjectName;\nconst nameParts = name.split(\" \");\nconst firstName = nameParts[0];\nconst lastName = nameParts.slice(1).join(\" \");\n\nreturn [{\n  json: {\n    full_name: name,\n    first_name: firstName,\n    last_name: lastName,\n    original_subject: subject\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1344,
+        96
+      ],
+      "id": "d0d12d15-d43e-4801-bab4-60831c345c1d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0cd667a-2f59-42b6-aa17-146d196d42b0",
+              "name": "message",
+              "value": "=Hi {{$json[\"first_name\"]}}, thanks for connecting! I build AI systems that automate LinkedIn outreach finding prospects, writing personalised messages and following up automatically. Just built one for a client that generated 100+ leads in minutes. Here's a quick demo: https://www.loom.com/share/f820c23710ba423eaf3098fa440f0306, worth a quick look for your business? Best regards, Isa",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1120,
+        96
+      ],
+      "id": "9ea258b9-f4d1-44bd-a39d-2777a579ca01",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "from": "+14155238886",
+        "to": "+2348139299686",
+        "toWhatsapp": true,
+        "message": "=🔔 New LinkedIn Connection! {{$('Code in JavaScript').item.json.full_name}} just accepted your connection request on LinkedIn. Your personalised message has been sent automatically. Check your LinkedIn messages to continue the conversation.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        -672,
+        96
+      ],
+      "id": "7cb8acd7-e0a2-4bdf-a392-74d6d301c8d6",
+      "name": "Send WhatsApp Notification",
+      "credentials": {
+        "twilioApi": {
+          "id": "EWv4Rft5304pbf5U",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 48,
+        "unit": "hours"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -448,
+        96
+      ],
+      "id": "9c58e16a-f02f-4fdb-b48d-d94a7eb7e391",
+      "name": "Wait 3 Days",
+      "webhookId": "d3f14ec6-bce1-4300-9410-2681443bfee7"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9cb05357-d9fe-4647-885d-ef307951613e",
+              "leftValue": "={{$json.status}}",
+              "rightValue": "Responded",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -224,
+        96
+      ],
+      "id": "d85ac48f-ce4a-4da3-8ccb-61932cea1922",
+      "name": "If Responded"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6773cd5d-6a6d-4f0e-8b03-e126032b6fed",
+      "name": "Stop - Already Responded"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "06e92444-ad71-4072-827a-fc0a0546513f",
+              "name": "followup_message",
+              "value": "=Hi {{$json[\"first_name\"]}}, just circling back, I help agencies and B2B businesses automate their LinkedIn outreach completely. Happy to show you a quick demo of how it could work for you. Worth a 15-min chat this week? Best, Isa",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        192
+      ],
+      "id": "c40f9408-e62c-4424-ad0b-2e84a8fbf295",
+      "name": "Generate Follow-up"
+    },
+    {
+      "parameters": {
+        "from": "+14155238886",
+        "to": "+2348139299686",
+        "toWhatsapp": true,
+        "message": "=⚡ Follow-up triggered for {{$('Code in JavaScript').item.json.full_name}} — no reply after 48 hours. Follow-up message sent automatically.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        224,
+        192
+      ],
+      "id": "56a496ba-9434-4222-ba2b-9470e98374b6",
+      "name": "Send Follow-up Alert",
+      "credentials": {
+        "twilioApi": {
+          "id": "EWv4Rft5304pbf5U",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1RkCP_lFh3tI22g1VZ7GL9lgfjbehBXHsWj5HQS1WDlM",
+          "mode": "list",
+          "cachedResultName": "Toyslab Tech",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RkCP_lFh3tI22g1VZ7GL9lgfjbehBXHsWj5HQS1WDlM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Lead List",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RkCP_lFh3tI22g1VZ7GL9lgfjbehBXHsWj5HQS1WDlM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{$json.full_name}}",
+            "first_name": "={{$json.first_name}}",
+            "last_name": "={{$json.last_name}}",
+            "status": "Message Sent",
+            "date_added": "={{$now}}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "last_name",
+              "displayName": "last_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "linkedin_url",
+              "displayName": "linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "icebreaker",
+              "displayName": "icebreaker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "date_added",
+              "displayName": "date_added",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -896,
+        96
+      ],
+      "id": "13307c32-fff0-46a0-896b-71a371ad30d8",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleApi": {
+          "id": "Dlx1iW1WCfX3S9NE",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Notification": {
+      "main": [
+        [
+          {
+            "node": "Wait 3 Days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 3 Days": {
+      "main": [
+        [
+          {
+            "node": "If Responded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Responded": {
+      "main": [
+        [
+          {
+            "node": "Stop - Already Responded",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Follow-up": {
+      "main": [
+        [
+          {
+            "node": "Send Follow-up Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a515e828-b641-4454-8bb2-9b31fc72acd9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "780b3b54698dd48070c152589fef13f0d6c0d3214b8eeccb343bd8d97a595503"
+  },
+  "nodeGroups": [],
+  "id": "TpaCCVjmlfg78bCu",
+  "tags": []
+}

@@ -1,0 +1,491 @@
+{
+  "name": "1. OutreachOS LinkedIn Outreach Toyslab Tech",
+  "nodes": [
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.1",
+          "mode": "list",
+          "cachedResultName": "GPT-5.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You're a helpful, intelligent sales assistant.",
+              "role": "system"
+            },
+            {
+              "content": "Your task is to take as input a natural language description of a prospect audience, and turn that into a LinkedIn Search URL.\n\nHere's an example of a LinkedIn Search URL:\n\nhttps://www.linkedin.com/search/results/people/?keywords=founder+digital+marketing+agency&origin=GLOBAL_SEARCH_HEADER\n\nReturn your response in JSON using this format:\n\n{\"searchUrl\":\"search url goes here\"}"
+            },
+            {
+              "content": "={{ $json['Describe your audience in plain English.'] }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "id": "76e87db1-82c2-4c40-85a8-2a787705ab2f",
+      "name": "Generate Search URL",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        64,
+        -352
+      ],
+      "typeVersion": 1.6,
+      "credentials": {
+        "openAiApi": {
+          "id": "7tviGft3fuFpHzFv",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.1",
+          "mode": "list",
+          "cachedResultName": "GPT-5.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a helpful, intelligent writing assistant.",
+              "role": "system"
+            },
+            {
+              "content": "Your task is to take as input a bunch of LinkedIn profile information of a user, and then generate a very short, very punchy icebreaker that I can use as a variable in my connection request.\n\nReturn your results in this format:\n\n{\"icebreaker\":\"Icebreaker goes here\"}\n\nIn order to ensure icebreakers are punchy and high-quality, make them follow this template:\n\nHey {{name}}, loved seeing {{thingAboutThem}}. I'm also into {{plausibleTieIn}}, thought I'd connect.\n\nFor {{thingAboutThem}} and {{plausibleTieIn}}, never use the exact information provided in a LinkedIn field. Instead, always paraphrase. This makes it seem human written, instead of just an automated message. Also, make it super short. Don't say stuff like \"passionate about turning vision into reality\" or anything like that—be extremely laconic and spartan."
+            },
+            {
+              "content": "{\"linkedInFields\":\"Danielle Morgan, Fort Lauderdale, Founder & CEO at DM Creative Agency, previous experience: Regional Sales Director at Out East Eyewear, Account Director at Radancy\"}"
+            },
+            {
+              "content": "{\n  \"icebreaker\": \"Hey Danielle, loved seeing your creative agency journey. I'm also building brands, thought I'd connect.\"\n}",
+              "role": "assistant"
+            },
+            {
+              "content": "=={\"linkedInFields\":\"{{ $json.firstName }} {{ $json.lastName }}, {{ $json.location }}, {{ $json.jobTitle }} at {{ $json.company }}, previous experience: {{ $json.jobTitle2 }} at {{ $json.company2 }}\"}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "id": "d10bc8be-ad7a-49ae-a04a-7e0502129626",
+      "name": "Personalize Outreach",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        1312,
+        -352
+      ],
+      "typeVersion": 1.6,
+      "credentials": {
+        "openAiApi": {
+          "id": "7tviGft3fuFpHzFv",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1RkCP_lFh3tI22g1VZ7GL9lgfjbehBXHsWj5HQS1WDlM",
+          "mode": "list",
+          "cachedResultName": "Toyslab Tech",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RkCP_lFh3tI22g1VZ7GL9lgfjbehBXHsWj5HQS1WDlM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Lead List",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RkCP_lFh3tI22g1VZ7GL9lgfjbehBXHsWj5HQS1WDlM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "first_name": "={{$('HTTP Request1').item.json.firstName}}",
+            "last_name": "={{$('HTTP Request1').item.json.lastName}}",
+            "linkedin_url": "={{$('HTTP Request1').item.json.profileUrl}}",
+            "title": "={{$('HTTP Request1').item.json.headline}}",
+            "date_added": "={{$now}}",
+            "icebreaker": "={{$json.message.content.icebreaker}}",
+            "name": "={{$('HTTP Request1').item.json.fullName}}",
+            "status": "Connection Request Sent"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_name",
+              "displayName": "last_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedin_url",
+              "displayName": "linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "icebreaker",
+              "displayName": "icebreaker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date_added",
+              "displayName": "date_added",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "aac29ba5-2872-44e4-a47e-553c730a2e40",
+      "name": "Add to Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1664,
+        -352
+      ],
+      "typeVersion": 4.5,
+      "credentials": {
+        "googleApi": {
+          "id": "Dlx1iW1WCfX3S9NE",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "6d67f223-88bb-4612-863c-1fe313c556d7",
+      "name": "Aggregate",
+      "type": "n8n-nodes-base.aggregate",
+      "position": [
+        1888,
+        -352
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.phantombuster.com/api/v2/agents/launch",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Phantombuster-Key",
+              "value": ""
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "7996515522430638"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2db531a6-2ef8-49c7-81ae-f69c81552899",
+      "name": "Trigger PhantomBuster Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2112,
+        -352
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "https://api.phantombuster.com/api/v2/agents/fetch?id=7167555851922418",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Phantombuster-Key",
+              "value": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        864,
+        -352
+      ],
+      "id": "9eed66ac-7f5a-4a37-94dc-7607d5338436",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "url": "=https://phantombuster.s3.amazonaws.com/{{$json.orgS3Folder}}/{{$json.s3Folder}}/result.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1088,
+        -352
+      ],
+      "id": "33c1f4f9-74df-425e-b100-7cb08145e59e",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.phantombuster.com/api/v2/agents/launch",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Phantombuster-Key",
+              "value": ""
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"id\":\"7167555851922418\",\"argument\":\"{\\\"linkedInSearchUrl\\\":\\\"{{ $('Generate Search URL').item.json.message.content.searchUrl }}\\\",\\\"numberOfLinesPerLaunch\\\":10,\\\"numberOfResultsPerLaunch\\\":100,\\\"searchType\\\":\\\"linkedInSearchUrl\\\",\\\"category\\\":\\\"People\\\",\\\"connectionDegreesToScrape\\\":[\\\"2\\\",\\\"3+\\\"]}\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        -352
+      ],
+      "id": "4fb02038-aba6-4114-afb8-7b4d6e853cf7",
+      "name": "Launch"
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        -352
+      ],
+      "id": "41b9ca8b-353a-48d0-ad77-bd4d342ad1db",
+      "name": "Wait",
+      "webhookId": "a314dc10-fcd1-4a27-bd6e-fbf1069786fa"
+    },
+    {
+      "parameters": {
+        "authentication": "basicAuth",
+        "formTitle": "LinkedIn Lead Outreach Trigger",
+        "formDescription": "Insert an audience for your LinkedIn Outreach Campaign here.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Describe your audience in plain English.",
+              "fieldType": "textarea",
+              "placeholder": "Company type, location, etc",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1d51ea13-f868-4745-aa2a-3775d92e8e07",
+      "name": "Describe Your Leads",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        -160,
+        -352
+      ],
+      "webhookId": "04bd6254-5974-4e96-acb4-2bc855e52007",
+      "typeVersion": 2.2,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "091CBcdlfmBsk3pi",
+          "name": "Unnamed credential"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Generate Search URL": {
+      "main": [
+        [
+          {
+            "node": "Launch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Personalize Outreach": {
+      "main": [
+        [
+          {
+            "node": "Add to Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add to Google Sheet": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Trigger PhantomBuster Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Personalize Outreach",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Launch": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Describe Your Leads": {
+      "main": [
+        [
+          {
+            "node": "Generate Search URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "5fb700a5-6dde-42fc-b283-1f55f028119d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "780b3b54698dd48070c152589fef13f0d6c0d3214b8eeccb343bd8d97a595503"
+  },
+  "nodeGroups": [],
+  "id": "4QenPPJePgdQXBTx",
+  "tags": []
+}

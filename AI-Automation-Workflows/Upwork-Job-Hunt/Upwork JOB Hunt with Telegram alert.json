@@ -1,0 +1,484 @@
+{
+  "name": "Upwork JOB Hunt with Telegram alert",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "id": "74e2b3c7-7736-4a61-9076-28149c6b7927",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -1232,
+        -96
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1DBGhzByha9Hv7S7WY8uHlE9in4zXuMy8s1jSYB746sI",
+          "mode": "list",
+          "cachedResultName": "MyUpworkScraper",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DBGhzByha9Hv7S7WY8uHlE9in4zXuMy8s1jSYB746sI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DBGhzByha9Hv7S7WY8uHlE9in4zXuMy8s1jSYB746sI/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "URL": "={{ $json.URL }}",
+            "Date": "={{ $json.Date }}",
+            "Found": "={{ $json.Found }}",
+            "Score": "={{ $json.Score }}",
+            "Title": "={{ $json.Title }}",
+            "Salary": "={{ $json.Salary }}",
+            "Status": "={{ $json.Status }}",
+            "Message": "={{ $json.Message }}",
+            "Location": "={{ $json.Location }}",
+            "Experience": "={{ $json.Experience }}",
+            "Description": "={{ $json.Description }}",
+            "Payment Type": "={{ $json['Payment Type'] }}"
+          },
+          "matchingColumns": [
+            "URL"
+          ],
+          "schema": [
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment Type",
+              "displayName": "Payment Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Experience",
+              "displayName": "Experience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Salary",
+              "displayName": "Salary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Score",
+              "displayName": "Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Found",
+              "displayName": "Found",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "3f507017-1c1b-471e-8e2d-102b2b3133d4",
+      "name": "Append or update row in sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        -560,
+        -96
+      ],
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleApi": {
+          "id": "Dlx1iW1WCfX3S9NE",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d78912c8-c63e-4f32-af19-60a568d02377",
+              "name": "Job Title",
+              "type": "string",
+              "value": "={{ $json.Title }}"
+            },
+            {
+              "id": "7ade5447-cac2-4fc2-bff2-517a8583d11e",
+              "name": "job posted",
+              "type": "string",
+              "value": "={{ $json.Date }}"
+            },
+            {
+              "id": "caff77ba-6c86-4685-b752-bae8ed41e58f",
+              "name": "Payment type",
+              "type": "string",
+              "value": "={{ $json['Payment Type'] }}"
+            },
+            {
+              "id": "52215059-aa70-469b-8b09-f51ada9a5fa0",
+              "name": "score",
+              "type": "string",
+              "value": "={{ $json.Score }}"
+            },
+            {
+              "id": "89926694-3595-4d22-b6ea-00228fb38a11",
+              "name": "budget",
+              "type": "string",
+              "value": "={{ $json.Salary }}"
+            },
+            {
+              "id": "5e48ea5b-92ad-49ce-be07-2f377c073af9",
+              "name": "url",
+              "type": "string",
+              "value": "={{ $json.URL }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "69956a48-720f-41f2-b77d-d58261ffbdf8",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -336,
+        -96
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "5de2dab5-7ee1-4f72-a438-41a6ae346549",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 70
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "0e79e60c-31e3-4a41-8a5e-7ff7832e3643",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -112,
+        -96
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "41636510-c2f4-4672-9824-86ae7382a73e",
+              "name": "job",
+              "type": "string",
+              "value": "={{ $json['Job Title'] }}"
+            },
+            {
+              "id": "8a2c0c90-938d-4405-929d-6e735a3c58c2",
+              "name": "job posted",
+              "type": "string",
+              "value": "={{ $json['job posted'] }}"
+            },
+            {
+              "id": "2191f1cd-770e-49f6-abbb-38e1b33165be",
+              "name": "payment type",
+              "type": "string",
+              "value": "={{ $json['Payment type'] }}"
+            },
+            {
+              "id": "1849509f-54a4-45fc-86f8-505bed8def52",
+              "name": "salary",
+              "type": "string",
+              "value": "={{ $('Edit Fields').item.json.budget }}"
+            },
+            {
+              "id": "fb772e6f-2e63-412f-bce9-160a02c9ebd2",
+              "name": "score",
+              "type": "string",
+              "value": "={{ $json.score }}"
+            },
+            {
+              "id": "ed95e66a-31ee-4f19-b399-f24ebe3cce1f",
+              "name": "url",
+              "type": "string",
+              "value": "={{ $json.url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0cc0371b-b4b6-4fe0-b8cc-6f22f3592fb4",
+      "name": "Edit Fields2",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        112,
+        -96
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/neatrat~upwork-job-scraper/run-sync-get-dataset-items?token=apify_api_A5nNGf5YCDk1uySwSRMAszIXpt1Hrwesrwsf&maxItems=10",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ query: $json.body?.searchQuery ?? '\"AI Automation Specialist\" OR \"AI Automation Engineer\" OR \"Automation Engineer\" OR \"AI Engineer\" OR n8n OR Zapier OR \"Make.com\" OR \"AI Agent\"' }) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "d45e0f4b-d40c-4b32-983f-320230ece7ad",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1008,
+        -96
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "chatId": "1458406728",
+        "text": "=🚨 New Job Alert – make the proposal ASAP!\n\nJob Title : {{ $json.job }}\nPosted On : {{ $json['job posted'] }}\nBudget : {{ $json.salary }}\nJob Score : {{ $json.score }}\nJob URL : {{ $json.url }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        336,
+        -96
+      ],
+      "id": "3ce948c7-7430-4e62-813d-cc9f512047e4",
+      "name": "Send Telegram Alert",
+      "webhookId": "5606e4b7-4f46-4161-a745-253f5ea08d53",
+      "credentials": {
+        "telegramApi": {
+          "id": "hDuB21CakVtygs7r",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalise the Apify \"Upwork Job Scraper\" (neatrat) output into your sheet's\n// columns, capture the client's hourly/fixed budget, score against YOUR\n// keywords, and SKIP jobs already seen in previous runs (dedupe by URL).\n//\n// >>> EDIT THIS LIST to tune what gets you notified <<<\nconst KEYWORDS = [\n  'ai automation', 'automation specialist', 'automation engineer',\n  'ai engineer', 'ai agent', 'n8n', 'make.com', 'zapier',\n  'workflow automation', 'automation', 'lead generation', 'linkedin lead',\n  'rag', 'chatbot', 'openai', 'llm', 'gpt', 'integromat', 'claude'\n];\n\nconst norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');\nfunction pick(obj, aliases, dflt = '') {\n  const map = {};\n  for (const k of Object.keys(obj || {})) map[norm(k)] = obj[k];\n  for (const a of aliases) {\n    const v = map[norm(a)];\n    if (v !== undefined && v !== null && v !== '') return v;\n  }\n  return dflt;\n}\n\n// run-sync returns one job per item; also handle a wrapped array just in case\nlet jobs = items.map((i) => i.json);\nif (jobs.length === 1) {\n  const only = jobs[0] || {};\n  const arr = only.items || only.response || only.data || only.results;\n  if (Array.isArray(arr)) jobs = arr;\n}\n\nconst now = new Date().toISOString();\n\n// build normalised rows\nconst rows = jobs.filter((j) => j && Object.keys(j).length).map((j) => {\n  const title = pick(j, ['title', 'jobTitle', 'name']);\n  const url   = pick(j, ['url', 'jobUrl', 'link', 'jobLink', 'ciphertext']);\n  const date  = pick(j, ['postedTime','postedOn','postedDate','publishedDate','publishDate','createdAt','time','date','postingTime']);\n  const description = pick(j, ['description', 'jobDescription', 'snippet']);\n  const skills = pick(j, ['skills', 'tags', 'requiredSkills', 'category'], '');\n  const location = pick(j, ['clientCountry','clientLocation','country','location']);\n  const experience = pick(j, ['experienceLevel','experience','contractorTier','tier','difficulty']);\n\n  // ---- client's budget: hourly range OR fixed price ----\n  let salary = pick(j, ['hourlyRate','hourlyBudget','budget','fixedPrice','fixedBudget','projectBudget','amount','salary','rate','price']);\n  const hMin = pick(j, ['hourlyRateMin','hourlyBudgetMin','minHourlyRate','rateMin']);\n  const hMax = pick(j, ['hourlyRateMax','hourlyBudgetMax','maxHourlyRate','rateMax']);\n  if (salary && typeof salary === 'object') {\n    const mn = salary.min ?? salary.minAmount ?? salary.rateMin ?? salary.hourlyMin;\n    const mx = salary.max ?? salary.maxAmount ?? salary.rateMax ?? salary.hourlyMax;\n    const amt = salary.amount ?? salary.value ?? salary.fixed;\n    if (mn || mx) salary = `$${mn ?? '?'} - $${mx ?? '?'}/hr`;\n    else if (amt) salary = `$${amt}`;\n    else salary = JSON.stringify(salary);\n  }\n  if (!salary && (hMin || hMax)) salary = `$${hMin || '?'} - $${hMax || '?'}/hr`;\n\n  const jt = String(pick(j, ['jobType','contractType','type','paymentType'])).toLowerCase();\n  const paymentType = /hour/.test(jt) ? 'Hourly' : /fixed/.test(jt) ? 'Fixed'\n                    : (/\\/hr/i.test(String(salary)) ? 'Hourly' : '');\n\n  const skillsText = Array.isArray(skills) ? skills.join(', ') : String(skills);\n\n  // ---- keyword-based match score (0-100) ----\n  const text = (title + ' ' + description + ' ' + skillsText).toLowerCase();\n  const matched = KEYWORDS.filter((k) => text.includes(k));\n  let score = 20;\n  score += Math.min(matched.length, 5) * 14;   // up to +70\n  const amount = parseFloat((String(salary).match(/[\\d,.]+/) || ['0'])[0].replace(/,/g, ''));\n  if (amount >= 1000) score += 10;\n  if (score > 100) score = 100;\n\n  return { json: {\n    Title: title, URL: url, Date: date, Found: now,\n    Description: description, Salary: salary, 'Payment Type': paymentType,\n    Location: location, Experience: experience,\n    Status: 'New', Message: matched.join(', '),\n    Score: score,\n  }};\n});\n\n// ---- SKIP jobs already seen in previous runs (persisted across executions) ----\nconst store = $getWorkflowStaticData('global');\nstore.seenUrls = store.seenUrls || [];\nconst seen = new Set(store.seenUrls);\nconst fresh = rows.filter((r) => r.json.URL && !seen.has(r.json.URL));\nfor (const r of fresh) store.seenUrls.push(r.json.URL);\nif (store.seenUrls.length > 5000) store.seenUrls = store.seenUrls.slice(-5000); // cap growth\n\nreturn fresh;\n"
+      },
+      "id": "f603e156-4660-44b6-8711-fae3abb44c5e",
+      "name": "Normalize & Score Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -784,
+        -96
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Score Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize & Score Jobs": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "69a30c90-e6f5-419e-80ca-d8562ab5c1ca",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "780b3b54698dd48070c152589fef13f0d6c0d3214b8eeccb343bd8d97a595503"
+  },
+  "nodeGroups": [],
+  "id": "OCs7LtDh5ieCxP0U",
+  "tags": []
+}
