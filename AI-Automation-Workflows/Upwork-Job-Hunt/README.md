@@ -58,13 +58,7 @@ Send Telegram Alert
 
 ## 📸 Screenshots
 
-### Workflow
-
-_Add workflow screenshot here._
-
-### Telegram Notification
-
-_Add Telegram alert screenshot here._
+See the screenshots inside this project folder.
 
 ---
 
